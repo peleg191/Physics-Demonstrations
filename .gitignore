@@ -1,0 +1,10 @@
+# Private development inputs; never add these to a public repository.
+Material/
+PLAN.md
+.agents/
+.codex/
+.aws/
+node_modules/
+.DS_Store
+__pycache__/
+*.pyc
