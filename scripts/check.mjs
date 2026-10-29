@@ -14,6 +14,7 @@ async function walk(dir) {
 }
 await walk(root);
 for (const path of files) {
+  if (/\.(?:otf|ttf|woff2?)$/i.test(path)) continue; // Font bytes are not source text.
   const text = await readFile(path, 'utf8');
   if (/\.pdf$/i.test(path) || /tirgul|recitation|homework|\.pdf\b/i.test(text)) throw new Error(`Private material reference: ${path}`);
   if (/\.js$/.test(path)) {
@@ -22,7 +23,8 @@ for (const path of files) {
   }
   const refs = path.endsWith('.js')
     ? [...text.matchAll(/(?:from\s*|import\s*\()(['"])(\.\.?\/[^'"]+)\1/g)].map(m => m[2])
-    : path.endsWith('.html') ? [...text.matchAll(/(?:src|href)="(\.\.?\/[^"#]+)"/g)].map(m => m[1]) : [];
+    : path.endsWith('.html') ? [...text.matchAll(/(?:src|href)="(\.\.?\/[^"#]+)"/g)].map(m => m[1])
+    : path.endsWith('.css') ? [...text.matchAll(/url\(['"]?(\.\.?\/[^)'"]+)['"]?\)/g)].map(m => m[1]) : [];
   for (const ref of refs) {
     const target = resolve(dirname(path), ref);
     if (relative(root, target).startsWith('..')) throw new Error(`Asset outside public directory: ${ref}`);

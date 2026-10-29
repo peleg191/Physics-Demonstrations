@@ -1,0 +1,4 @@
+Latin Modern Math, version 1.959.
+Copyright 2012–2014 B. Jackowski, P. Strzelczyk and P. Pianowski, on behalf of TeX Users Groups.
+Distributed unmodified under the GUST Font License; see GUST-FONT-LICENSE.txt.
+Source: https://www.gust.org.pl/projects/e-foundry/lm-math

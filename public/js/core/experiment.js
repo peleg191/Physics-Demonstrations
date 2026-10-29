@@ -3,7 +3,7 @@ import { metric } from './controls.js';
 import { translator } from './i18n.js';
 import { createClock } from './clock.js';
 // Shared shell; only a demo knows its physical model, drawing and duration.
-export function createExperiment({ root, lang, duration, render, reset, defaults, mobileViewBox = '0 0 800 480' }) {
+export function createExperiment({ root, lang, duration, render, reset, defaults, viewBox = '0 0 800 480', mobileViewBox = viewBox }) {
   const controller = new AbortController(); const { signal } = controller;
   let currentLang = lang, t = translator(lang), statusKey = 'ready';
   const layout = element('div', 'experiment-layout');
@@ -13,9 +13,9 @@ export function createExperiment({ root, lang, duration, render, reset, defaults
   const status = element('span', 'status-pill', t('ready'));
   const liveMark = element('span', 'stage-caption');
   stageHead.append(status, liveMark);
-  const svg = svgElement('svg', { viewBox: '0 0 800 480', role: 'img', 'aria-label': t('stage'), class: 'system-svg', direction: 'ltr' });
+  const svg = svgElement('svg', { viewBox, role: 'img', 'aria-label': t('stage'), class: 'system-svg', direction: 'ltr' });
   const narrowScreen = matchMedia('(max-width: 600px)');
-  const resizeDiagram = () => svg.setAttribute('viewBox', narrowScreen.matches ? mobileViewBox : '0 0 800 480');
+  const resizeDiagram = () => svg.setAttribute('viewBox', narrowScreen.matches ? mobileViewBox : viewBox);
   narrowScreen.addEventListener?.('change', resizeDiagram, { signal });
   resizeDiagram();
   const accessible = element('p', 'sr-only');
@@ -48,7 +48,7 @@ export function createExperiment({ root, lang, duration, render, reset, defaults
     step.disabled = clock.ended;
     render(time, api);
   } });
-  const api = { svg, parameters, metrics, feedback, accessible, modelText, liveMark, signal, clock,
+  const api = { stageColumn, svg, parameters, metrics, feedback, accessible, modelText, liveMark, signal, clock,
     get lang() { return currentLang; },
     setDescription(text) { accessible.textContent = text; svg.setAttribute('aria-label', text); },
     setLanguage(next) {

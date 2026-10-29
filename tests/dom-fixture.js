@@ -5,6 +5,7 @@ class Node extends EventTarget {
     this.style = { setProperty() {} }; this.className = ''; this._text = ''; this.value = ''; this.disabled = false;
     this.classList = { toggle: (key, value) => { const classes = new Set(this.className.split(' ').filter(Boolean)); value ? classes.add(key) : classes.delete(key); this.className = [...classes].join(' '); } };
   }
+  focus() { document.activeElement = this; }
   append(...nodes) { for (const node of nodes) { node.parentNode = this; this.children.push(node); } }
   replaceChildren(...nodes) { for (const node of this.children) node.parentNode = null; this.children = []; this._text = ''; this.append(...nodes); }
   remove() { if (this.parentNode) this.parentNode.children = this.parentNode.children.filter(n => n !== this); this.parentNode = null; }

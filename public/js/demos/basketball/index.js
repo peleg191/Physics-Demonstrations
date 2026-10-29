@@ -5,12 +5,40 @@ import { element, svgElement as s, svgText } from '../../core/dom.js';
 import { translator, format } from '../../core/i18n.js';
 import { defaultParameters, projectileState, flightDuration, shotOutcome, velocityComponents } from './physics.js';
 import { strings } from './strings.js';
+import { createBodyAnalysis } from '../../core/body-analysis.js';
+import { motionAnalysis } from './analysis.js';
 export function mount({ root, lang }) {
-  let params = { ...defaultParameters }, previous = null, showPrevious = true;
+  let params = { ...defaultParameters }, previous = null, showPrevious = true, showTrail = false;
   const gravity = physicsConfig.gravity;
   let words = strings[lang], t = translator(lang), scene = null;
   const controls = new Map();
   const api = createExperiment({ root, lang, duration: () => flightDuration(params, gravity), render, reset: () => reset(), defaults });
+  let selected = false, pausedForAnalysis = false;
+  const hint = element('p', 'analysis-hint'); hint.id = 'basketball-selection-hint'; api.stageColumn.append(hint);
+  const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'basketball-analysis', onClose: () => clearSelection(true) });
+  api.svg.setAttribute('role', 'group');
+  function clearSelection(restoreFocus = false) {
+    if (!selected) return;
+    selected = false; pausedForAnalysis = false; analysis.hide(); render(api.clock.time);
+    if (restoreFocus) scene.ball.focus();
+  }
+  function selectBall() {
+    pausedForAnalysis = api.clock.playing;
+    if (api.clock.playing) api.clock.pause();
+    selected = true; render(api.clock.time);
+  }
+  function isBall(target) {
+    for (let node = target; node && node !== api.svg; node = node.parentNode) if (node === scene.ball) return true;
+    return false;
+  }
+  // Delegate to the stable SVG: parameter changes rebuild the ball without retaining old listeners.
+  api.svg.addEventListener('click', event => isBall(event.target) ? selectBall() : clearSelection(), { signal: api.signal });
+  api.svg.addEventListener('keydown', event => {
+    if (isBall(event.target) && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selectBall(); }
+  }, { signal: api.signal });
+  root.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && selected && !event.defaultPrevented) { event.preventDefault(); clearSelection(true); }
+  }, { signal: api.signal });
   const xMetric = metric(words.x, t('meters')), yMetric = metric(words.y, t('meters'));
   api.metrics.append(xMetric.root, yMetric.root);
   const specs = [
@@ -24,7 +52,7 @@ export function mount({ root, lang }) {
   advanced.append(summary, fields);
   for (const [index, spec] of specs.entries()) {
     const control = parameter({ ...spec, id: `basketball-${spec.key}`, label: words[spec.key], unit: spec.unit === '°' ? '°' : t(spec.unit), value: params[spec.key], signal: api.signal, onChange(v) {
-      remember(); params[spec.key] = v; buildScene(); api.clock.reset();
+      remember(); pausedForAnalysis = false; params[spec.key] = v; buildScene(); api.clock.reset();
     } });
     controls.set(spec.key, control); (index < 2 ? api.parameters : fields).append(control.root);
   }
@@ -32,10 +60,15 @@ export function mount({ root, lang }) {
   const compare = element('label', 'compare-toggle'); const checkbox = element('input'); checkbox.type = 'checkbox'; checkbox.checked = true;
   const compareText = element('span', '', words.compare); compare.append(checkbox, compareText); api.parameters.append(compare);
   checkbox.addEventListener('change', () => { showPrevious = checkbox.checked; render(api.clock.time); }, { signal: api.signal });
+  const trailToggle = element('label', 'compare-toggle'); const trailCheckbox = element('input');
+  trailCheckbox.type = 'checkbox'; trailCheckbox.id = 'basketball-trail'; trailCheckbox.checked = showTrail;
+  const trailText = element('span', '', words.trail); trailToggle.append(trailCheckbox, trailText); api.parameters.append(trailToggle);
+  trailCheckbox.addEventListener('change', () => { showTrail = trailCheckbox.checked; render(api.clock.time); }, { signal: api.signal });
   function remember() { if (api.clock.time > 0) previous = { params: { ...params }, time: api.clock.time }; }
-  function reset() { api.clock.reset(); }
+  function reset() { pausedForAnalysis = false; api.clock.reset(); }
   function defaults() {
-    previous = null; params = { ...defaultParameters }; for (const [key, control] of controls) control.update(params[key]);
+    showTrail = false; trailCheckbox.checked = false;
+    pausedForAnalysis = false; previous = null; params = { ...defaultParameters }; for (const [key, control] of controls) control.update(params[key]);
     buildScene(); api.clock.reset();
   }
   function buildScene() {
@@ -69,10 +102,23 @@ export function mount({ root, lang }) {
     const paths = s('g', { 'clip-path': 'url(#shot-clip)' }, svg);
     const old = s('path', { fill: 'none', stroke: '#8c9b8b', opacity: 0.5, 'stroke-width': 2, 'stroke-dasharray': '3 7' }, paths);
     const path = s('path', { fill: 'none', stroke: '#6f8e65', 'stroke-width': 2.2, 'stroke-linecap': 'round' }, paths);
-    const ball = s('g', {}, svg);
-    s('circle', { r: 12, fill: '#e3a06a', stroke: '#b77a4b', 'stroke-width': 1 }, ball);
-    s('path', { d: 'M -10 -6 Q 0 5 10 -6 M -11 4 L 11 4 M 0 -12 Q -6 0 2 12', fill: 'none', stroke: '#a4673e', 'stroke-width': 1 }, ball);
-    scene = { X, Y, old, path, ball };
+    // Fixed simulated-time samples, independent of frame rate and playback speed.
+    const trail = s('g', { class: 'basketball-trail', 'aria-hidden': 'true', 'pointer-events': 'none' }, paths);
+    const trailDots = [];
+    for (let sample = 0; sample / 10 <= end; sample++) {
+      const state = projectileState(params, sample / 10, gravity);
+      trailDots.push(s('circle', { cx: X(state.x), cy: Y(state.y), r: 3.5, fill: '#365f50', display: 'none' }, trail));
+    }
+    const orientation = s('g', { class: 'motion-orientation', transform: 'translate(680 465)', display: 'none', 'aria-hidden': 'true', 'pointer-events': 'none' }, svg);
+    s('path', { d: 'M 0 0 H 40 M 33 -5 L 40 0 L 33 5 M 0 0 V -24 M -5 -17 L 0 -24 L 5 -17', fill: 'none', stroke: '#526452', 'stroke-width': 2 }, orientation);
+    svgText(orientation, 48, 5, '+x'); svgText(orientation, -8, -30, '+y');
+    const ball = s('g', { role: 'button', tabindex: 0, class: 'selectable-ball', 'aria-describedby': hint.id, 'aria-controls': 'basketball-analysis' }, svg);
+    s('circle', { r: 24, class: 'ball-hit', fill: 'transparent' }, ball);
+    s('circle', { r: 18, class: 'ball-selection', fill: 'none', stroke: '#203c35', 'stroke-width': 2, 'stroke-dasharray': '5 3', 'pointer-events': 'none' }, ball);
+    const artwork = s('g', { 'pointer-events': 'none' }, ball);
+    s('circle', { r: 12, fill: '#e3a06a', stroke: '#b77a4b', 'stroke-width': 1 }, artwork);
+    s('path', { d: 'M -10 -6 Q 0 5 10 -6 M -11 4 L 11 4 M 0 -12 Q -6 0 2 12', fill: 'none', stroke: '#a4673e', 'stroke-width': 1 }, artwork);
+    scene = { X, Y, old, path, ball, artwork, orientation, trailDots };
   }
   function pathData(p, time) {
     const points = [];
@@ -86,18 +132,25 @@ export function mount({ root, lang }) {
     if (!scene) return;
     const state = projectileState(params, time, gravity), outcome = shotOutcome(params, gravity);
     scene.path.setAttribute('d', pathData(params, time));
+    scene.trailDots.forEach((dot, sample) => dot.setAttribute('display', showTrail && sample / 10 <= time + 1e-9 ? 'inline' : 'none'));
     scene.old.setAttribute('d', previous && showPrevious ? pathData(previous.params, previous.time) : '');
-    scene.ball.setAttribute('transform', `translate(${scene.X(state.x)} ${scene.Y(Math.max(0, state.y))}) rotate(${time * 110})`);
+    scene.ball.setAttribute('transform', `translate(${scene.X(state.x)} ${scene.Y(Math.max(0, state.y))})`);
+    scene.artwork.setAttribute('transform', `rotate(${time * 110})`);
+    scene.ball.setAttribute('aria-label', words.ballLabel);
+    scene.ball.setAttribute('aria-pressed', String(selected));
+    scene.orientation.setAttribute('display', selected ? 'inline' : 'none');
+    if (api.clock.playing) pausedForAnalysis = false;
+    if (selected) analysis.update(motionAnalysis(words, { paused: pausedForAnalysis, ended: time >= flightDuration(params, gravity) }));
     xMetric.set(state.x); yMetric.set(Math.max(0, state.y));
     const key = time === 0 ? 'ready' : time >= outcome.time ? outcome.key : time >= flightDuration(params, gravity) ? 'short' : 'moving';
     if (api.feedback.textContent !== words[key]) api.feedback.textContent = words[key];
     api.setDescription(words.description(format(state.x), format(Math.max(0, state.y))));
   }
   function setLanguage(next) {
-    words = strings[next]; t = translator(next); api.setLanguage(next);
+    words = strings[next]; t = translator(next); api.setLanguage(next); hint.textContent = words.selectHint;
     for (const spec of specs) controls.get(spec.key).localize(words[spec.key], spec.unit === '°' ? '°' : t(spec.unit));
     xMetric.localize(words.x, t('meters')); yMetric.localize(words.y, t('meters'));
-    summary.textContent = t('advanced'); compareText.textContent = words.compare; api.modelText.textContent = words.about; api.liveMark.textContent = words.caption;
+    summary.textContent = t('advanced'); compareText.textContent = words.compare; trailText.textContent = words.trail; api.modelText.textContent = words.about; api.liveMark.textContent = words.caption;
     render(api.clock.time);
   }
   buildScene(); setLanguage(lang); api.clock.reset();
