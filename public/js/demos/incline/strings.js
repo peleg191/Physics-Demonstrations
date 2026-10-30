@@ -1,5 +1,7 @@
 export const strings = {
   en: {
+    resolveForces: 'Resolve forces along the incline axes',
+    resolveNote: 'x points downhill; y points away from the plane. Weight is replaced by mg sin θ downhill and mg cos θ into the plane. Normal force and friction already follow these axes.',
     mass: 'Mass', angle: 'Slope angle', staticFriction: 'Static friction μₛ', kineticFriction: 'Kinetic friction μₖ',
     distance: 'Distance down slope', acceleration: 'Acceleration', critical: 'Critical angle',
     caption: 'INCLINED PLANE · FRICTION',
@@ -21,6 +23,8 @@ export const strings = {
     coefficientNote: 'Changing either coefficient adjusts the other when needed to keep μₖ ≤ μₛ.',
   },
   he: {
+    resolveForces: 'פירוק הכוחות לצירים של המדרון',
+    resolveNote: 'ציר x במורד המדרון; ציר y בניצב למישור וכלפי חוץ. המשקל מוחלף ברכיבים mg sin θ במורד ו־mg cos θ לתוך המישור. הכוח הנורמלי והחיכוך כבר מכוונים לאורך הצירים.',
     mass: 'מסה', angle: 'זווית המדרון', staticFriction: 'מקדם חיכוך סטטי μₛ', kineticFriction: 'מקדם חיכוך קינטי μₖ',
     distance: 'מרחק במורד המדרון', acceleration: 'תאוצה', critical: 'זווית קריטית',
     caption: 'מישור משופע עם חיכוך',

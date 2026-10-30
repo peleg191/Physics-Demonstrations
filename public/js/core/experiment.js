@@ -3,6 +3,7 @@ import { metric } from './controls.js';
 import { translator } from './i18n.js';
 import { createClock } from './clock.js';
 import { createMotionGraphs } from './motion-graphs.js';
+import { createQuiz } from './quiz.js';
 const transportPaths = {
   play: 'M8 5v14l11-7Z',
   pause: 'M7 5h3v14H7ZM14 5h3v14h-3Z',
@@ -20,7 +21,7 @@ function labelTransport(control, label, icon) {
   control.replaceChildren(svg, element('span', '', label));
 }
 // Shared shell; only a demo knows its physical model, drawing and duration.
-export function createExperiment({ root, lang, duration, render, reset, defaults, motion, viewBox = '0 0 800 480', mobileViewBox = viewBox }) {
+export function createExperiment({ root, lang, system, duration, render, reset, defaults, motion, viewBox = '0 0 800 480', mobileViewBox = viewBox }) {
   const controller = new AbortController(); const { signal } = controller;
   let currentLang = lang, t = translator(lang), statusKey = 'ready';
   const layout = element('div', 'experiment-layout');
@@ -46,18 +47,21 @@ export function createExperiment({ root, lang, duration, render, reset, defaults
   const rate = element('select'); rate.id = 'playback-rate';
   const normal = element('option', '', t('normal')); normal.value = '1';
   const slow = element('option', '', t('slow')); slow.value = '0.25'; rate.append(normal, slow); rateWrap.append(rateLabel, rate);
-  transport.append(play, step, restart, rateWrap);
+  transport.append(play, step, restart);
+  stage.append(transport);
   const metrics = element('div', 'metrics'); const timeMetric = metric(t('time'), t('seconds'), 't'); metrics.append(timeMetric.root);
   const feedback = element('p', 'feedback'); feedback.setAttribute('role', 'status'); feedback.setAttribute('aria-live', 'polite');
   const reduced = element('p', 'reduced-note', t('reduced')); reduced.hidden = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-  stageColumn.append(stage, transport, metrics, feedback, reduced);
+  stageColumn.append(stage, rateWrap, metrics, feedback, reduced);
   const panel = element('aside', 'control-panel');
   const panelTitle = element('h2', '', t('parameters')); const panelNote = element('p', 'panel-note', t('parametersNote'));
   const parameters = element('div', 'parameters');
+  const quiz = system ? createQuiz({ system, lang, signal }) : null;
   const defaultButton = button(t('defaults'), 'text-button');
   const resetNote = element('p', 'reset-note', t('defaultNote'));
   const assumptions = element('details', 'model-notes'); const summary = element('summary', '', t('assumptions')); const modelText = element('p');
   assumptions.append(summary, modelText); panel.append(panelTitle, panelNote, parameters, defaultButton, resetNote, assumptions);
+  if (quiz) panel.insertBefore(quiz.root, parameters);
   layout.append(stageColumn, panel); root.append(layout);
   let lastReadout = -Infinity;
   const clock = createClock({ duration, onTick(time, playing, frame) {
@@ -77,11 +81,20 @@ export function createExperiment({ root, lang, duration, render, reset, defaults
     graphs?.update(time, time === 0 && !playing, updateReadouts);
   } });
   const graphs = motion ? createMotionGraphs({ parent: stage, panel, signal, lang, duration, model: motion, time: () => clock.time }) : null;
+  const mobileLayout = matchMedia('(max-width: 600px), (max-width: 1000px) and (max-height: 600px) and (orientation: landscape)');
+  function placeGraphs() {
+    if (!graphs) return;
+    if (mobileLayout.matches) stageColumn.insertBefore(graphs.root, metrics);
+    else if (graphs.root.parentNode !== stage) stage.append(graphs.root);
+  }
+  mobileLayout.addEventListener?.('change', placeGraphs, { signal });
+  placeGraphs();
   const api = { stageColumn, svg, parameters, metrics, feedback, accessible, modelText, liveMark, signal, clock,
     get lang() { return currentLang; },
     setDescription(text) { setText(accessible, text); if (svg.getAttribute('aria-label') !== text) svg.setAttribute('aria-label', text); },
     setLanguage(next) {
       currentLang = next; t = translator(next);
+      quiz?.setLanguage(next);
       graphs?.setLanguage(next);
       panelTitle.textContent = t('parameters'); panelNote.textContent = t('parametersNote');
       defaultButton.textContent = t('defaults'); resetNote.textContent = t('defaultNote'); summary.textContent = t('assumptions');

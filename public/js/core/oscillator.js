@@ -14,7 +14,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   const pendulum = kind === 'pendulum', gravity = physicsConfig.gravity;
   let params = { ...defaultParameters }, words = strings[lang], selected = false, paused = false, scene;
   const controls = new Map();
-  const api = createExperiment({ root, lang, motion: () => motionModel(time => { const state = oscillatorState(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; }, { angular: pendulum, note: pendulum ? 'graphAngularNote' : 'graphNote' }), duration: () => duration(params, gravity), render, reset, defaults });
+  const api = createExperiment({ root, lang, system: kind, motion: () => motionModel(time => { const state = oscillatorState(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; }, { angular: pendulum, note: pendulum ? 'graphAngularNote' : 'graphNote' }), duration: () => duration(params, gravity), render, reset, defaults });
   api.svg.setAttribute('role', 'group');
   const hint = element('p', 'analysis-hint'); hint.id = `${kind}-hint`; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: `${kind}-analysis`, onClose: close });
@@ -28,7 +28,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   }
   function reset() { paused = false; api.clock.reset(); }
   function defaults() { params = { ...defaultParameters }; for (const [key, control] of controls) control.update(params[key]); reset(); }
-  function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); scene.body.focus(); }
+  function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); scene.body.focus({ preventScroll: true }); }
   function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; render(api.clock.time); }
   function isBody(node) { for (; node && node !== api.svg; node = node.parentNode) if (node === scene.body) return true; return false; }
   api.svg.addEventListener('click', event => { if (isBody(event.target)) select(); else if (selected) close(); }, { signal: api.signal });
@@ -42,12 +42,13 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     const reference = s('line', { x1: 400, x2: 400, y1: pendulum ? 100 : 230, y2: pendulum ? 410 : 375, stroke: '#9caa91', 'stroke-dasharray': '5 6' }, svg);
     const connector = s('path', { fill: 'none', stroke: pendulum ? '#ad8959' : '#6f8e65', 'stroke-width': 3 }, svg);
     const body = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': `${kind}-analysis`, 'aria-describedby': hint.id }, svg);
+    s('circle', { class: 'mass-hit', r: 64, fill: 'transparent', 'aria-hidden': 'true' }, body);
     if (pendulum) s('circle', { class: 'mass-body', r: 19, fill: '#c38e60' }, body);
     else s('rect', { class: 'mass-body', x: -30, y: -30, width: 60, height: 60, rx: 7, fill: '#61816b' }, body);
     svgText(body, 0, 6, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
     const forces = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, svg);
     const force = s('path', { fill: 'none', stroke: '#9a451b', 'stroke-width': 4 }, forces);
-    const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle' });
+    const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle', class: 'force-label' });
     const geometry = geometryLayer(svg);
     prepareSketchOutlines(api.svg);
     scene = { body, reference, connector, forces, force, label, geometry };

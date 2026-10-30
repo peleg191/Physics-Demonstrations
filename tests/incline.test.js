@@ -52,3 +52,42 @@ test('incline selection, coefficient constraints, rest, localization and disposa
     demo.dispose(); demo = null; assert.equal(fixture.root.children.length, 0); assert.equal(fixture.frames.size, 0);
   } finally { demo?.dispose(); fixture.cleanup(); }
 });
+
+test('incline angle persists during playback and resolved arrows reconstruct weight along slope axes', () => {
+  const fixture = browserFixture(); let demo;
+  try {
+    demo = mount({ root: fixture.root, lang: 'en' });
+    const find = fixture.find;
+    const toggle = find(node => node.id === 'incline-resolve-forces');
+    toggle.checked = true; toggle.dispatchEvent(new Event('change'));
+    for (const angle of [0, 30, 60]) {
+      const input = find(node => node.id === 'incline-angle');
+      input.value = String(angle); input.dispatchEvent(new Event('change'));
+      const angleMarker = find(node => node.getAttribute('class') === 'incline-angle');
+      assert.match(angleMarker.textContent, new RegExp(`θ = ${angle}`));
+      const parallelLabel = find(node => node.textContent.startsWith('mg sin θ =') && node.tagName === 'text');
+      const forceGroup = parallelLabel.parentNode;
+      assert.equal(forceGroup.getAttribute('display'), 'inline');
+      const paths = forceGroup.children.filter(node => node.tagName === 'path' && node.getAttribute('display') === 'inline');
+      assert.equal(paths.length, 4);
+      const vector = path => path.getAttribute('d').match(/ l ([^ ]+) ([^ ]+)/).slice(1).map(Number);
+      const [parallel, normal, friction, perpendicular] = paths.map(vector);
+      close(parallel[0] + perpendicular[0], 0);
+      close(parallel[1] + perpendicular[1], 60);
+      close(normal[0] + perpendicular[0], 0);
+      close(normal[1] + perpendicular[1], 0);
+      const alpha = angle * Math.PI / 180;
+      close(parallel[0] * Math.sin(alpha) - parallel[1] * Math.cos(alpha), 0);
+      close(friction[0] * Math.sin(alpha) - friction[1] * Math.cos(alpha), 0);
+      assert.doesNotMatch(forceGroup.textContent, /NaN|Infinity/);
+    }
+    find(node => node.tagName === 'button' && node.textContent === 'Play').dispatchEvent(new Event('click'));
+    fixture.frame(0); fixture.frame(100);
+    assert.notEqual(find(node => node.getAttribute('class') === 'incline-angle').getAttribute('display'), 'none');
+    demo.setLanguage('he');
+    assert.match(toggle.parentNode.textContent, /פירוק הכוחות/);
+    toggle.checked = false; toggle.dispatchEvent(new Event('change'));
+    const axes = find(node => node.getAttribute('class') === 'incline-force-axes');
+    assert.equal(axes.parentNode.getAttribute('display'), 'none');
+  } finally { demo?.dispose(); fixture.cleanup(); }
+});

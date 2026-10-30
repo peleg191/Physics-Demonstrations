@@ -12,7 +12,7 @@ import { bodyAnalysis } from './analysis.js';
 export function mount({ root, lang }) {
   let params = { ...defaultParameters }, words = strings[lang], scene;
   const gravity = physicsConfig.gravity; const controls = new Map();
-  const api = createExperiment({ root, lang, motion: () => motionModel(time => { const state = pulleyState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphPulleyNote' }), duration: () => travelDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '0 -20 800 560', mobileViewBox: '200 -20 400 560' });
+  const api = createExperiment({ root, lang, system: 'pulley', motion: () => motionModel(time => { const state = pulleyState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphPulleyNote' }), duration: () => travelDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '0 -20 800 560', mobileViewBox: '200 -20 400 560' });
   let selected = null, pausedForAnalysis = false;
   const hint = element('p', 'analysis-hint'); hint.id = 'pulley-selection-hint'; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'pulley-analysis', onClose: closeAnalysis });
@@ -23,7 +23,7 @@ export function mount({ root, lang }) {
   }, { signal: api.signal });
   function closeAnalysis(restoreFocus = true) {
     const target = selected === 'mass1' ? scene.left.group : scene.right.group;
-    selected = null; pausedForAnalysis = false; analysis.hide(); render(api.clock.time); if (restoreFocus) target.focus();
+    selected = null; pausedForAnalysis = false; analysis.hide(); render(api.clock.time); if (restoreFocus) target.focus({ preventScroll: true });
   }
   function selectBody(body) {
     pausedForAnalysis = api.clock.playing;

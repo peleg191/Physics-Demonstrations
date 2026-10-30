@@ -3,6 +3,7 @@ import { resolveIllustrationStyle, illustrationSource } from './core/presentatio
 import { demonstrations } from './registry.js';
 import { translator } from './core/i18n.js';
 import { element } from './core/dom.js';
+import { createQuizBadge } from './core/quiz-badges.js';
 let savedStyle;
 try { savedStyle = localStorage.getItem('physics-illustration-style'); } catch { /* Storage is optional. */ }
 let illustrationStyle = ['current', 'notebook'].includes(savedStyle)
@@ -100,6 +101,7 @@ function catalog() {
     const imageArea = element('div', 'card-image'); const number = element('span', 'card-number', entry.number);
     const image = element('img'); image.dataset.illustration = entry.illustration; image.src = illustrationSource(entry.illustration, illustrationStyle); image.alt = ''; image.width = 620; image.height = 280;
     const topic = element('span', 'topic-pill', t(entry.topic)); imageArea.append(number, image, topic);
+    const badge = createQuizBadge(entry.id, lang); if (badge) imageArea.append(badge);
     const content = element('div', 'card-content');
     content.append(element('h3', '', entry.title[lang]), element('p', '', entry.description[lang]));
     const bottom = element('div', 'card-bottom'); const tags = element('div', 'tags');

@@ -119,5 +119,5 @@ export function createMotionGraphs({ parent, panel, signal, lang, duration, mode
     update(time(), true);
   }
   setLanguage(lang);
-  return { update, setLanguage };
+  return { root, update, setLanguage };
 }

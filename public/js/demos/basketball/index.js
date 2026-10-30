@@ -16,7 +16,7 @@ export function mount({ root, lang }) {
   const gravity = physicsConfig.gravity;
   let words = strings[lang], t = translator(lang), scene = null;
   const controls = new Map();
-  const api = createExperiment({ root, lang, motion: () => motionModel(time => { const state = projectileState(params, time, gravity); return [[state.x, state.y], [state.vx, state.vy], [state.ax, state.ay]]; }, { components: ['graphHorizontal', 'graphVertical'], note: 'graphProjectileNote' }), duration: () => flightDuration(params, gravity), render, reset: () => reset(), defaults });
+  const api = createExperiment({ root, lang, system: 'basketball', motion: () => motionModel(time => { const state = projectileState(params, time, gravity); return [[state.x, state.y], [state.vx, state.vy], [state.ax, state.ay]]; }, { components: ['graphHorizontal', 'graphVertical'], note: 'graphProjectileNote' }), duration: () => flightDuration(params, gravity), render, reset: () => reset(), defaults });
   let selected = false, pausedForAnalysis = false;
   const hint = element('p', 'analysis-hint'); hint.id = 'basketball-selection-hint'; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'basketball-analysis', onClose: () => clearSelection(true) });
@@ -24,7 +24,7 @@ export function mount({ root, lang }) {
   function clearSelection(restoreFocus = false) {
     if (!selected) return;
     selected = false; pausedForAnalysis = false; analysis.hide(); render(api.clock.time);
-    if (restoreFocus) scene.ball.focus();
+    if (restoreFocus) scene.ball.focus({ preventScroll: true });
   }
   function selectBall() {
     pausedForAnalysis = api.clock.playing;
@@ -74,11 +74,6 @@ export function mount({ root, lang }) {
   componentCheckbox.addEventListener('change', () => { showComponents = componentCheckbox.checked; render(api.clock.time); }, { signal: api.signal });
   const componentPanel = element('section', 'projectile-components');
   const componentHeading = element('h2');
-  const componentValues = element('div', 'projectile-component-values');
-  const horizontalVelocity = metric(words.horizontal, 'm/s', 'v_x'), verticalVelocity = metric(words.vertical, 'm/s', 'v_y');
-  horizontalVelocity.root.className += ' horizontal-component'; verticalVelocity.root.className += ' vertical-component';
-  componentValues.append(horizontalVelocity.root, verticalVelocity.root);
-  const componentNote = element('p', 'component-note');
   const pointControls = element('div', 'trajectory-points');
   const specialPoints = [
     { id: 'release', label: 'inspectRelease', time: () => 0 },
@@ -95,9 +90,7 @@ export function mount({ root, lang }) {
     }, { signal: api.signal });
     pointControls.append(point.button);
   }
-  const pointReadout = element('p', 'trajectory-point-readout');
-  const pointAvailability = element('p', 'trajectory-point-availability');
-  componentPanel.append(componentHeading, componentValues, componentNote, pointControls, pointReadout, pointAvailability); api.stageColumn.append(componentPanel);
+  componentPanel.append(componentHeading, pointControls); api.stageColumn.append(componentPanel);
   function remember() { if (api.clock.time > 0) previous = { params: { ...params }, time: api.clock.time }; }
   function reset() { pausedForAnalysis = false; api.clock.reset(); }
   function defaults() {
@@ -158,8 +151,14 @@ export function mount({ root, lang }) {
     const components = s('g', { class: 'velocity-components', 'pointer-events': 'none', 'aria-hidden': 'true' }, svg);
     const horizontalArrow = s('path', { class: 'horizontal-velocity' }, components);
     const verticalArrow = s('path', { class: 'vertical-velocity' }, components);
-    const horizontalLabel = svgText(components, 0, 0, 'vₓ', { class: 'velocity-label horizontal-velocity' });
-    const verticalLabel = svgText(components, 0, 0, 'vᵧ', { class: 'velocity-label vertical-velocity' });
+    function velocityLabel(axis, className) {
+      const label = svgText(components, 0, 0, 'v', { class: `velocity-label ${className}` });
+      const subscript = s('tspan', { dy: '0.3em', 'font-size': '70%' }, label);
+      subscript.textContent = axis;
+      return label;
+    }
+    const horizontalLabel = velocityLabel('x', 'horizontal-velocity');
+    const verticalLabel = velocityLabel('y', 'vertical-velocity');
     // One common scale preserves the ratio of the two velocity components.
     const velocityScale = 65 / Math.max(params.speed, Math.hypot(vy, Math.sqrt(vy * vy + 2 * gravity * params.releaseHeight)));
     const geometry = geometryLayer(svg);
@@ -189,7 +188,6 @@ export function mount({ root, lang }) {
     if (!scene) return;
     showInitialGeometry(scene.geometry, time, api.clock.playing);
     const state = projectileState(params, time, gravity), outcome = shotOutcome(params, gravity);
-    componentPanel.hidden = !showComponents;
     scene.components.setAttribute('display', showComponents ? 'inline' : 'none');
     const bx = scene.X(state.x), by = scene.Y(Math.max(0, state.y));
     scene.components.setAttribute('transform', `translate(${bx} ${by})`);
@@ -204,19 +202,13 @@ export function mount({ root, lang }) {
     scene.horizontalLabel.setAttribute('x', dx + 7); scene.horizontalLabel.setAttribute('y', -8);
     scene.verticalLabel.setAttribute('x', -24); scene.verticalLabel.setAttribute('y', dy + (dy > 0 ? 18 : -8));
     if (updateReadouts) {
-      horizontalVelocity.set(state.vx); verticalVelocity.set(Math.abs(state.vy) < 1e-9 ? 0 : state.vy);
       const end = flightDuration(params, gravity);
-      const ended = time >= end;
       const hoopAvailable = specialPoints[2].time() <= end;
       specialPoints[2].button.disabled = !hoopAvailable;
-      pointAvailability.hidden = hoopAvailable;
-      setText(pointAvailability, words.hoopUnavailable);
+      specialPoints[2].button.title = hoopAvailable ? '' : words.hoopUnavailable;
       const activePoint = specialPoints.find(point => Math.abs(point.time() - time) < 1e-9);
       for (const point of specialPoints) point.button.setAttribute('aria-pressed', String(point === activePoint));
-      pointReadout.hidden = !activePoint;
-      if (activePoint) pointReadout.textContent = `${words[activePoint.label]}: x = ${format(state.x)} m · y = ${format(Math.max(0, state.y))} m · t = ${format(time)} s. ${activePoint.id === 'release' ? words.releasePoint : activePoint.id === 'hoop' ? words.hoopPoint : activePoint.id === 'landing' ? words.landingPoint : words.peakPoint}`;
-  
-      setText(componentNote, ended ? words.componentsEnd : Math.abs(state.vy) < 1e-9 ? words.apex : state.vy > 0 ? words.componentsRising : words.componentsFalling);
+
     }
     scene.progress.setAttribute('width', scene.X(state.x));
     const visibleTrail = showTrail ? Math.min(scene.trailDots.length, Math.floor((time + 1e-9) * 10) + 1) : 0;
@@ -246,7 +238,6 @@ export function mount({ root, lang }) {
     xMetric.localize(words.x, t('meters')); yMetric.localize(words.y, t('meters'));
     componentText.textContent = words.showComponents; componentHeading.textContent = words.componentsTitle;
     componentPanel.setAttribute('aria-label', words.componentsTitle);
-    horizontalVelocity.localize(words.horizontal, 'm/s'); verticalVelocity.localize(words.vertical, 'm/s');
     for (const point of specialPoints) {
       point.button.replaceChildren(element('span', '', words[point.label]));
       if (point.id === 'peak') {

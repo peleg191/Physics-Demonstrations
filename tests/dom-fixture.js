@@ -6,7 +6,12 @@ class Node extends EventTarget {
     this.classList = { toggle: (key, value) => { const classes = new Set(this.className.split(' ').filter(Boolean)); value ? classes.add(key) : classes.delete(key); this.className = [...classes].join(' '); } };
   }
   focus() { document.activeElement = this; }
-  append(...nodes) { for (const node of nodes) { node.parentNode = this; this.children.push(node); } }
+  append(...nodes) { for (const node of nodes) { node.remove(); node.parentNode = this; this.children.push(node); } }
+  insertBefore(node, reference) {
+    node.remove(); node.parentNode = this;
+    const index = this.children.indexOf(reference);
+    this.children.splice(index < 0 ? this.children.length : index, 0, node);
+  }
   replaceChildren(...nodes) { for (const node of this.children) node.parentNode = null; this.children = []; this._text = ''; this.append(...nodes); }
   remove() { if (this.parentNode) this.parentNode.children = this.parentNode.children.filter(n => n !== this); this.parentNode = null; }
   setAttribute(key, value) { this.attributes[key] = String(value); }
