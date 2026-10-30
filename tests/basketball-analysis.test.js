@@ -50,7 +50,7 @@ test('ball selection survives rebuilt scenes, playback, localization and dismiss
     assert.ok(fixture.find(n => n.tagName === 'mi' && n.getAttribute('mathvariant') === 'normal' && n.textContent === 'cos'));
     demo.setLanguage('en'); play.dispatchEvent(new Event('click')); fixture.frame(1000); fixture.frame(1100);
     const beforeDismiss = time.textContent;
-    dispatch(svg, svg); assert.equal(panel.hidden, true); assert.equal(fixture.frames.size, 1);
+    dispatch(svg, svg); assert.equal(panel.hidden, true); assert.equal(fixture.frames.size, 0);
     assert.equal(time.textContent, beforeDismiss); assert.equal(orientation().getAttribute('display'), 'none');
     const enter = dispatch(svg, ball(), 'keydown', 'Enter'); assert.equal(enter.defaultPrevented, true);
     assert.equal(panel.hidden, false); assert.equal(fixture.frames.size, 0);

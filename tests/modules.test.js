@@ -11,7 +11,13 @@ for (const entry of demonstrations) {
     try {
       const module = await entry.load(); demo = module.mount({ root: fixture.root, lang: 'en' });
       const play = fixture.find(node => node.tagName === 'button' && node.textContent === 'Play');
-      assert.ok(play); assert.ok(fixture.find(node => node.tagName === 'svg'));
+      assert.ok(play);
+      assert.ok(fixture.find(node => node.getAttribute('class') === 'transport-icon', play));
+      const canvas = fixture.find(node => node.getAttribute('class') === 'system-svg');
+      canvas.dispatchEvent(new Event('click')); assert.equal(fixture.frames.size, 1);
+      assert.equal(play.textContent, 'Pause');
+      canvas.dispatchEvent(new Event('click')); assert.equal(fixture.frames.size, 0);
+      assert.equal(play.textContent, 'Play');
       play.dispatchEvent(new Event('click')); fixture.frame(0); fixture.frame(500);
       const timeMetric = fixture.find(hasClass('metric-value'));
       assert.equal(timeMetric.textContent, '0.50s'); assert.equal(fixture.frames.size, 1);

@@ -8,7 +8,7 @@ export function createClock({ onTick, duration, request = cb => requestAnimation
     if (last !== null) time = Math.min(duration(), time + Math.max(0, now - last) / 1000 * rate);
     last = now;
     if (time >= duration()) playing = false;
-    onTick(time, playing);
+    onTick(time, playing, { now });
     schedule();
   }
   function stop() {

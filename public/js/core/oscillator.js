@@ -1,9 +1,12 @@
+import { prepareSketchOutlines } from './sketch.js';
+import { geometryLayer, geometryLabel, angleGuide, dimensionGuide, showInitialGeometry } from './geometry.js';
+import { motionModel } from './motion-graphs.js';
 import { physicsConfig } from '../config.js';
 import { createExperiment } from './experiment.js';
 import { createBodyAnalysis } from './body-analysis.js';
 import { oscillatorAnalysis } from './oscillator-analysis.js';
 import { parameter, metric } from './controls.js';
-import { element, svgElement as s, svgText } from './dom.js';
+import { element, setText, svgElement as s, svgText } from './dom.js';
 import { translator, format } from './i18n.js';
 
 // Shared playback and selection; each oscillator supplies its own physical model.
@@ -11,12 +14,12 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   const pendulum = kind === 'pendulum', gravity = physicsConfig.gravity;
   let params = { ...defaultParameters }, words = strings[lang], selected = false, paused = false, scene;
   const controls = new Map();
-  const api = createExperiment({ root, lang, duration: () => duration(params, gravity), render, reset, defaults });
+  const api = createExperiment({ root, lang, motion: () => motionModel(time => { const state = oscillatorState(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; }, { angular: pendulum, note: pendulum ? 'graphAngularNote' : 'graphNote' }), duration: () => duration(params, gravity), render, reset, defaults });
   api.svg.setAttribute('role', 'group');
   const hint = element('p', 'analysis-hint'); hint.id = `${kind}-hint`; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: `${kind}-analysis`, onClose: close });
-  const position = metric(words.position, pendulum ? '°' : 'm');
-  const velocity = metric(words.velocity, pendulum ? 'rad/s' : 'm/s'), period = metric(words.period, 's');
+  const position = metric(words.position, pendulum ? '°' : 'm', pendulum ? 'θ' : 'x');
+  const velocity = metric(words.velocity, pendulum ? 'rad/s' : 'm/s', pendulum ? 'ω' : 'v'), period = metric(words.period, 's', 'T');
   api.metrics.append(position.root, velocity.root, period.root);
   for (const spec of specs) {
     const control = parameter({ ...spec, id: `${kind}-${spec.key}`, label: words[spec.key], value: params[spec.key], signal: api.signal,
@@ -45,11 +48,30 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     const forces = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, svg);
     const force = s('path', { fill: 'none', stroke: '#9a451b', 'stroke-width': 4 }, forces);
     const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle' });
-    scene = { body, reference, connector, forces, force, label };
+    const geometry = geometryLayer(svg);
+    prepareSketchOutlines(api.svg);
+    scene = { body, reference, connector, forces, force, label, geometry };
   }
-  function render(time) {
+  function render(time, { updateReadouts = true } = {}) {
     if (!scene) return;
     const state = oscillatorState(params, time, gravity);
+    showInitialGeometry(scene.geometry, time, api.clock.playing);
+    if (time === 0 && !api.clock.playing) {
+      scene.geometry.replaceChildren();
+      if (pendulum) {
+        const angle = params.amplitude * Math.PI / 180, length = params.length * 95;
+        angleGuide(s('g', { class: 'geometry-angle' }, scene.geometry), 400, 100, 65, Math.PI / 2 - angle, Math.PI / 2,
+          `θ₀ = ${format(params.amplitude, 1)}°`, 495, 155);
+        const bx = 400 + length * Math.sin(angle), by = 100 + length * Math.cos(angle);
+        geometryLabel(s('g', { class: 'geometry-length' }, scene.geometry),
+          (400 + bx) / 2 + 16, (100 + by) / 2 + 5, `l = ${format(params.length, 1)} m`, 'start');
+      } else {
+        const initialX = 400 + params.amplitude * 180;
+        s('path', { class: 'geometry-reference', d: `M 400 285 V 405 M ${initialX} 355 V 405` }, scene.geometry);
+        dimensionGuide(scene.geometry, 400, 390, initialX, 390, `x₀ = ${format(params.amplitude)} m`);
+        geometryLabel(scene.geometry, 400, 430, 'x = 0');
+      }
+    }
     let x, y, dx, dy;
     if (pendulum) {
       const length = params.length * 95;
@@ -70,13 +92,15 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     scene.forces.setAttribute('display', selected ? 'inline' : 'none');
     const length = Math.hypot(dx, dy), head = Math.min(10, length / 2), ux = length ? dx / length : 0, uy = length ? dy / length : 0;
     scene.force.setAttribute('d', `M ${x} ${y} l ${dx} ${dy} m ${-ux * head - uy * head / 2} ${-uy * head + ux * head / 2} l ${ux * head + uy * head / 2} ${uy * head - ux * head / 2} l ${-ux * head + uy * head / 2} ${-uy * head - ux * head / 2}`);
-    scene.label.setAttribute('x', x + dx / 2); scene.label.setAttribute('y', y + dy / 2 - 40); scene.label.textContent = words.force;
+    scene.label.setAttribute('x', x + dx / 2); scene.label.setAttribute('y', y + dy / 2 - 40); setText(scene.label, words.force);
     if (api.clock.playing) paused = false;
     const ended = time >= duration(params, gravity);
-    if (selected) analysis.update(oscillatorAnalysis(kind, words, paused, ended));
-    position.set(pendulum ? state.position * 180 / Math.PI : state.position); velocity.set(state.velocity); period.set(state.period);
-    api.feedback.textContent = ended ? words.end : words.moving;
-    api.setDescription(`${words.caption}. ${words.position}: ${format(pendulum ? state.position * 180 / Math.PI : state.position)} ${pendulum ? '°' : 'm'}. ${ended ? words.end : words.moving}`);
+    if (updateReadouts) {
+      if (selected) analysis.update(oscillatorAnalysis(kind, words, paused, ended));
+      position.set(pendulum ? state.position * 180 / Math.PI : state.position); velocity.set(state.velocity); period.set(state.period);
+      setText(api.feedback, ended ? words.end : words.moving);
+      api.setDescription(`${words.caption}. ${words.position}: ${format(pendulum ? state.position * 180 / Math.PI : state.position)} ${pendulum ? '°' : 'm'}. ${ended ? words.end : words.moving}`);
+    }
   }
   function setLanguage(next) {
     words = strings[next]; api.setLanguage(next); hint.textContent = words.hint;

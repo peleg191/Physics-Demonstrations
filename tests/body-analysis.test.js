@@ -68,7 +68,7 @@ test('selection pauses in place; keyboard, focus, expansions, translation, cutof
     canvas.dispatchEvent(new Event('click'));
     assert.equal(panel.hidden, true); assert.equal(overlay.getAttribute('display'), 'none');
     assert.equal(left.getAttribute('aria-pressed'), 'false'); assert.equal(right.getAttribute('aria-pressed'), 'false');
-    assert.equal(time.textContent, '0.50s'); assert.equal(fixture.frames.size, 0);
+    assert.equal(time.textContent, '0.50s'); assert.equal(fixture.frames.size, 1);
     left.dispatchEvent(new Event('click'));
     const input = fixture.find(n => n.tagName === 'input' && n.type === 'number');
     input.value = '30'; input.dispatchEvent(new Event('change'));

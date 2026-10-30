@@ -1,4 +1,4 @@
-import { element, button } from './dom.js';
+import { element, button, setText } from './dom.js';
 import { renderMath } from './math.js';
 
 // The demo supplies physical data and authored mathematics; this panel owns presentation only.
@@ -18,7 +18,11 @@ export function createBodyAnalysis({ parent, signal, onClose, id }) {
   root.append(header, notice, axis, equations, groups, numeric, solution, cutoff); parent.append(root);
   close.addEventListener('click', onClose, { signal });
   root.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); onClose(); } }, { signal });
+  const sectionSignatures = new WeakMap();
   function steps(container, items) {
+    const signature = JSON.stringify(items);
+    if (sectionSignatures.get(container) === signature) return;
+    sectionSignatures.set(container, signature);
     container.replaceChildren();
     for (const item of items) {
       const p = element(item.math ? 'div' : 'p', item.math ? 'equation' : '', item.math ? undefined : item.text);
@@ -26,7 +30,7 @@ export function createBodyAnalysis({ parent, signal, onClose, id }) {
       container.append(p);
     }
   }
-  let lastData = '';
+  let lastData = '', lastGroups = '';
   return {
     root,
     hide() { root.hidden = true; },
@@ -35,13 +39,16 @@ export function createBodyAnalysis({ parent, signal, onClose, id }) {
       const signature = JSON.stringify(data);
       if (signature === lastData) return;
       lastData = signature;
-      title.textContent = data.title; close.textContent = data.close;
-      notice.textContent = data.notice; notice.hidden = !data.notice;
-      axis.textContent = data.axis;
+      setText(title, data.title); setText(close, data.close);
+      setText(notice, data.notice); notice.hidden = !data.notice;
+      setText(axis, data.axis);
       numeric.hidden = !data.numeric; solution.hidden = !data.solution;
-      numericTitle.textContent = data.numericTitle || ''; solutionTitle.textContent = data.solutionTitle || '';
-      cutoff.textContent = data.cutoff; cutoff.hidden = !data.cutoff;
+      setText(numericTitle, data.numericTitle || ''); setText(solutionTitle, data.solutionTitle || '');
+      setText(cutoff, data.cutoff); cutoff.hidden = !data.cutoff;
       steps(equations, data.equations); steps(numericBody, data.numeric || []); steps(solutionBody, data.solution || []);
+      const groupSignature = JSON.stringify(data.groups || []);
+      if (groupSignature === lastGroups) return;
+      lastGroups = groupSignature;
       groups.replaceChildren(); groups.hidden = !data.groups?.length;
       for (const group of data.groups || []) {
         const section = element('section', 'motion-equation-group');

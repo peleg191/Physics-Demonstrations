@@ -1,5 +1,13 @@
 const messages = {
   en: {
+    showGraphs: 'Show motion graphs', motionGraphs: 'Motion over time', graphLayout: 'Graph layout', graphStacked: 'Stacked', graphBeside: 'Side by side',
+    graphNote: 'Displacement from equilibrium. Each graph has its own scale; the dashed line marks the current time.',
+    graphAngularNote: 'Angular displacement from equilibrium, in radians. Each graph has its own scale; the dashed line marks the current time.',
+    graphInclineNote: 'Displacement along the incline, positive downhill. Curves end at the travel limit, before impact.',
+    graphPulleyNote: 'Left mass displacement, positive downward; the right mass moves in the opposite direction. Curves end before impact.',
+    graphProjectileNote: 'Each plot contains two curves: horizontal motion (x) and vertical motion (y). Positive y points upward; height is measured from the ground. Each plot has its own scale.',
+    graphLegend: 'Motion components', graphHorizontalMotion: 'Horizontal motion (x) · solid', graphVerticalMotion: 'Vertical motion (y) · dashed',
+    graphMotion: 'Value', graphHorizontal: 'Horizontal', graphVertical: 'Vertical',
     brand: 'physics playground', collection: 'The collection', skip: 'Skip to content', nav: 'Main navigation',
     footer: 'A little curiosity. A lot of possibility.', footerNote: 'Explore · Observe · Try again',
     eyebrow: 'AN OPEN LAB FOR CURIOUS MINDS', hero: 'Get a feel for', heroAccent: 'how things move.',
@@ -14,6 +22,14 @@ const messages = {
     defaultNote: 'Parameter changes restart the experiment.', meters: 'm', seconds: 's', kilograms: 'kg', ms: 'm/s',
   },
   he: {
+    showGraphs: 'הצגת גרפי תנועה', motionGraphs: 'תנועה לאורך זמן', graphLayout: 'סידור הגרפים', graphStacked: 'אחד מעל השני', graphBeside: 'זה לצד זה',
+    graphNote: 'העתק מנקודת שיווי המשקל. לכל גרף קנה מידה משלו; הקו המקווקו מסמן את הזמן הנוכחי.',
+    graphAngularNote: 'העתק זוויתי מנקודת שיווי המשקל, ברדיאנים. לכל גרף קנה מידה משלו; הקו המקווקו מסמן את הזמן הנוכחי.',
+    graphInclineNote: 'העתק לאורך המדרון, חיובי כלפי מטה. העקומות מסתיימות בגבול התנועה, לפני הפגיעה.',
+    graphPulleyNote: 'העתק המסה השמאלית, חיובי כלפי מטה; המסה הימנית נעה בכיוון ההפוך. העקומות מסתיימות לפני הפגיעה.',
+    graphProjectileNote: 'בכל גרף שני עקומים: תנועה אופקית (x) ותנועה אנכית (y). הכיוון החיובי של y הוא כלפי מעלה והגובה נמדד מהקרקע. לכל גרף קנה מידה משלו.',
+    graphLegend: 'רכיבי התנועה', graphHorizontalMotion: 'תנועה אופקית (x) · קו רציף', graphVerticalMotion: 'תנועה אנכית (y) · קו מקווקו',
+    graphMotion: 'ערך', graphHorizontal: 'אופקי', graphVertical: 'אנכי',
     brand: 'מגרש משחקים לפיזיקה', collection: 'אוסף הניסויים', skip: 'דילוג לתוכן', nav: 'ניווט ראשי',
     footer: 'קצת סקרנות. הרבה אפשרויות.', footerNote: 'לחקור · להתבונן · לנסות שוב',
     eyebrow: 'מעבדה פתוחה לסקרנות', hero: 'להרגיש איך', heroAccent: 'דברים זזים.',

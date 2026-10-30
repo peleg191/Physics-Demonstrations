@@ -8,13 +8,27 @@
   <title>Physics Playground</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles/main.css">
+  <link rel="stylesheet" href="./styles/notebook.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('physics-theme');
+      document.documentElement.dataset.theme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch { document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+  </script>
   <script type="module" src="./js/app.js"></script>
 </head>
 <body>
+  <svg class="illustration-definitions" width="0" height="0" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="notebook-hatching" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-25)">
+        <path d="M 0 0 V 9" fill="none" stroke="#5f796b" stroke-width="1" opacity=".35"/>
+      </pattern>
+    </defs>
+  </svg>
   <a class="skip-link" href="#main" id="skip">Skip to content</a>
   <header class="site-header">
     <a class="brand" href="#/" aria-label="Physics Playground home"><span class="brand-mark" aria-hidden="true">p<span>·</span></span><span id="brand-name">physics playground</span></a>
-    <nav aria-label="Main navigation" id="navigation"><a href="#/" id="catalog-link">The collection</a><button class="language-button" id="language" type="button" lang="he">עברית <span aria-hidden="true">↗</span></button></nav>
+    <nav aria-label="Main navigation" id="navigation"><a href="#/" id="catalog-link">The collection</a><button class="theme-button" id="theme" type="button" aria-label="Dark mode" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.5 14A9 9 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z"/></svg></button><button class="theme-button style-button" id="illustration-style" type="button" aria-label="Notebook style" aria-pressed="false" title="Notebook style"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M8 3v18M3 7h4M3 12h4M3 17h4M11 8h6M11 12h6M11 16h4"/></svg></button><button class="language-button" id="language" type="button" lang="he">עברית <span aria-hidden="true">↗</span></button></nav>
   </header>
   <main id="main" tabindex="-1"></main>
   <footer class="site-footer"><span id="footer-title">A little curiosity. A lot of possibility.</span><span id="footer-note">Explore · Observe · Try again</span></footer>

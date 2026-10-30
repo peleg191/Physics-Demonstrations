@@ -20,3 +20,7 @@ export function svgText(parent, x, y, text, attrs = {}) {
   node.textContent = text;
   return node;
 }
+
+export function setText(node, text) {
+  if (node.textContent !== text) node.textContent = text;
+}

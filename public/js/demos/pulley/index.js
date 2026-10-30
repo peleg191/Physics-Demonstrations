@@ -1,7 +1,9 @@
+import { prepareSketchOutlines } from '../../core/sketch.js';
+import { motionModel } from '../../core/motion-graphs.js';
 import { physicsConfig } from '../../config.js';
 import { createExperiment } from '../../core/experiment.js';
 import { parameter, metric } from '../../core/controls.js';
-import { element, svgElement as s, svgText } from '../../core/dom.js';
+import { element, setText, svgElement as s, svgText } from '../../core/dom.js';
 import { translator, format } from '../../core/i18n.js';
 import { defaultParameters, pulleyState, travelDuration } from './physics.js';
 import { strings } from './strings.js';
@@ -10,7 +12,7 @@ import { bodyAnalysis } from './analysis.js';
 export function mount({ root, lang }) {
   let params = { ...defaultParameters }, words = strings[lang], scene;
   const gravity = physicsConfig.gravity; const controls = new Map();
-  const api = createExperiment({ root, lang, duration: () => travelDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '0 -20 800 560', mobileViewBox: '200 -20 400 560' });
+  const api = createExperiment({ root, lang, motion: () => motionModel(time => { const state = pulleyState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphPulleyNote' }), duration: () => travelDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '0 -20 800 560', mobileViewBox: '200 -20 400 560' });
   let selected = null, pausedForAnalysis = false;
   const hint = element('p', 'analysis-hint'); hint.id = 'pulley-selection-hint'; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'pulley-analysis', onClose: closeAnalysis });
@@ -31,10 +33,10 @@ export function mount({ root, lang }) {
   root.addEventListener('keydown', event => {
     if (event.key === 'Escape' && selected && !event.defaultPrevented) { event.preventDefault(); closeAnalysis(); }
   }, { signal: api.signal });
-  const leftMetric = metric(words.left, 'm'), rightMetric = metric(words.right, 'm');
+  const leftMetric = metric(words.left, 'm', 's_1'), rightMetric = metric(words.right, 'm', 's_2');
   api.metrics.append(leftMetric.root, rightMetric.root);
   for (const key of ['mass1', 'mass2']) {
-    const control = parameter({ id: `pulley-${key}`, label: words[key], unit: 'kg', min: 1, max: 30, step: 0.5, value: params[key], signal: api.signal, onChange(value) { params[key] = value; pausedForAnalysis = false; api.clock.reset(); } });
+    const control = parameter({ id: `pulley-${key}`, label: words[key], symbol: key === 'mass1' ? 'm_1' : 'm_2', unit: 'kg', min: 1, max: 30, step: 0.5, value: params[key], signal: api.signal, onChange(value) { params[key] = value; pausedForAnalysis = false; api.clock.reset(); } });
     controls.set(key, control); api.parameters.append(control.root);
   }
   function reset() { pausedForAnalysis = false; api.clock.reset(); }
@@ -66,6 +68,7 @@ export function mount({ root, lang }) {
       const label = svgText(group, 0, 0, '', { class: 'force-label' });
       return { shaft, head, label, direction };
     });
+    prepareSketchOutlines(api.svg);
     scene = { rope, left, right, wheel, forces, arrows };
     function mass(color, name, body) {
       const group = s('g', { role: 'button', tabindex: 0, class: 'selectable-mass', 'aria-describedby': hint.id, 'aria-controls': 'pulley-analysis' }, svg);
@@ -81,7 +84,7 @@ export function mount({ root, lang }) {
       return { group, label };
     }
   }
-  function render(time) {
+  function render(time, { updateReadouts = true } = {}) {
     if (!scene) return;
     if (api.clock.playing) pausedForAnalysis = false;
     for (const [body, mass] of [['mass1', scene.left], ['mass2', scene.right]]) {
@@ -91,7 +94,7 @@ export function mount({ root, lang }) {
     const data = selected ? bodyAnalysis(params, gravity, selected, words, {
       paused: pausedForAnalysis, cutoff: time >= travelDuration(params, gravity),
     }) : null;
-    if (data) analysis.update(data);
+    if (data && updateReadouts) analysis.update(data);
     scene.forces.setAttribute('display', data ? 'inline' : 'none');
     const state = pulleyState(params, time, gravity), shift = state.displacement * 65;
     const leftY = 300 + shift, rightY = 300 - shift;
@@ -118,10 +121,12 @@ export function mount({ root, lang }) {
     }
     scene.wheel.setAttribute('transform', `rotate(${-shift / 70 * 180 / Math.PI} 400 156)`);
     // Report magnitudes; direction is communicated in the localized feedback.
-    leftMetric.set(Math.abs(state.left)); rightMetric.set(Math.abs(state.right));
-    const key = state.acceleration === 0 ? 'balanced' : time >= travelDuration(params, gravity) ? 'end' : time === 0 ? state.acceleration > 0 ? 'readyLeft' : 'readyRight' : state.acceleration > 0 ? 'leftDown' : 'rightDown';
-    if (api.feedback.textContent !== words[key]) api.feedback.textContent = words[key];
-    api.setDescription(words.description(format(params.mass1, 1), format(params.mass2, 1), words[key]));
+    if (updateReadouts) {
+      leftMetric.set(Math.abs(state.left)); rightMetric.set(Math.abs(state.right));
+      const key = state.acceleration === 0 ? 'balanced' : time >= travelDuration(params, gravity) ? 'end' : time === 0 ? state.acceleration > 0 ? 'readyLeft' : 'readyRight' : state.acceleration > 0 ? 'leftDown' : 'rightDown';
+      if (api.feedback.textContent !== words[key]) setText(api.feedback, words[key]);
+      api.setDescription(words.description(format(params.mass1, 1), format(params.mass2, 1), words[key]));
+    }
   }
   function setLanguage(next) {
     words = strings[next]; api.setLanguage(next); hint.textContent = words.selectHint;

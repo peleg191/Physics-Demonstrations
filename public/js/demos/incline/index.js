@@ -1,8 +1,11 @@
+import { prepareSketchOutlines } from '../../core/sketch.js';
+import { geometryLayer, geometryLabel, angleGuide, dimensionGuide, showInitialGeometry } from '../../core/geometry.js';
+import { motionModel } from '../../core/motion-graphs.js';
 import { physicsConfig } from '../../config.js';
 import { createExperiment } from '../../core/experiment.js';
 import { createBodyAnalysis } from '../../core/body-analysis.js';
 import { parameter, metric } from '../../core/controls.js';
-import { element, svgElement as s, svgText } from '../../core/dom.js';
+import { element, setText, svgElement as s, svgText } from '../../core/dom.js';
 import { translator, format } from '../../core/i18n.js';
 import { defaultParameters, inclineState, travelDuration } from './physics.js';
 import { strings } from './strings.js';
@@ -10,17 +13,17 @@ import { bodyAnalysis } from './analysis.js';
 export function mount({ root, lang }) {
   let params = { ...defaultParameters }, words = strings[lang], selected = false, paused = false, scene;
   const gravity = physicsConfig.gravity, controls = new Map();
-  const api = createExperiment({ root, lang, duration: () => travelDuration(params, gravity), render, reset, defaults });
+  const api = createExperiment({ root, lang, motion: () => motionModel(time => { const state = inclineState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphInclineNote' }), duration: () => travelDuration(params, gravity), render, reset, defaults });
   api.svg.setAttribute('role', 'group');
   const hint = element('p', 'analysis-hint'); hint.id = 'incline-hint'; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'incline-analysis', onClose: close });
-  const distance = metric(words.distance, 'm'), acceleration = metric(words.acceleration, 'm/s²'), critical = metric(words.critical, '°');
+  const distance = metric(words.distance, 'm', 's'), acceleration = metric(words.acceleration, 'm/s²', 'a'), critical = metric(words.critical, '°', 'θ_c');
   api.metrics.append(distance.root, acceleration.root, critical.root);
   const specs = [
-    { key: 'mass', min: 1, max: 30, step: 0.5, unit: 'kg' },
-    { key: 'angle', min: 0, max: 60, step: 0.1, unit: '°' },
-    { key: 'staticFriction', min: 0, max: 1, step: 0.01, unit: '' },
-    { key: 'kineticFriction', min: 0, max: 1, step: 0.01, unit: '' },
+    { key: 'mass', symbol: 'm', min: 1, max: 30, step: 0.5, unit: 'kg' },
+    { key: 'angle', symbol: 'θ', min: 0, max: 60, step: 0.1, unit: '°' },
+    { key: 'staticFriction', symbol: 'μ_s', min: 0, max: 1, step: 0.01, unit: '' },
+    { key: 'kineticFriction', symbol: 'μ_k', min: 0, max: 1, step: 0.01, unit: '' },
   ];
   for (const spec of specs) {
     const control = parameter({ ...spec, id: `incline-${spec.key}`, label: words[spec.key], value: params[spec.key], signal: api.signal, onChange(value) {
@@ -56,7 +59,10 @@ export function mount({ root, lang }) {
     const endX = startX + 6 * scale * c, endY = startY + 6 * scale * sn;
     s('path', { d: `M ${startX} ${startY} L ${endX} ${endY} L ${startX} ${endY} Z`, fill: '#dce3d1', stroke: '#839775', 'stroke-width': 2 }, api.svg);
     s('line', { x1: startX, y1: startY, x2: startX + 95, y2: startY, stroke: '#8b9982', 'stroke-dasharray': '4 4' }, api.svg);
-    svgText(api.svg, startX + 65, startY + 18, `${format(params.angle, 1)}°`);
+    const geometry = geometryLayer(api.svg);
+    if (alpha > 0) angleGuide(geometry, startX, startY, 65, 0, alpha,
+      `θ = ${format(params.angle, 1)}°`, startX + 115, startY + 24);
+    else geometryLabel(geometry, startX + 115, startY + 24, 'θ = 0°');
     const block = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': 'incline-analysis', 'aria-describedby': hint.id }, api.svg);
     s('rect', { class: 'mass-body', x: -24, y: -48, width: 48, height: 48, rx: 5, fill: '#61816b' }, block);
     svgText(block, 0, -18, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
@@ -66,10 +72,12 @@ export function mount({ root, lang }) {
       const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle' });
       return { path, label };
     });
-    scene = { c, sn, scale, startX, startY, block, forces, arrows };
+    prepareSketchOutlines(api.svg);
+    scene = { c, sn, scale, startX, startY, block, forces, arrows, geometry };
   }
-  function render(time) {
+  function render(time, { updateReadouts = true } = {}) {
     if (!scene) return;
+    showInitialGeometry(scene.geometry, time, api.clock.playing);
     const state = inclineState(params, time, gravity), { c, sn, scale, startX, startY } = scene;
     const x = startX + (0.5 + state.displacement) * scale * c, y = startY + (0.5 + state.displacement) * scale * sn;
     scene.block.setAttribute('transform', `translate(${x} ${y}) rotate(${params.angle})`);
@@ -77,7 +85,7 @@ export function mount({ root, lang }) {
     scene.forces.setAttribute('display', selected ? 'inline' : 'none');
     if (api.clock.playing) paused = false;
     if (selected) {
-      analysis.update(bodyAnalysis(words, state, paused, time >= travelDuration(params, gravity)));
+      if (updateReadouts) analysis.update(bodyAnalysis(words, state, paused, time >= travelDuration(params, gravity)));
       // All force arrows share the same scale, set by weight to fit the scene.
       const forceScale = 85 / state.weight, cx = x + 24 * sn, cy = y - 24 * c;
       const vectors = [[0, state.weight, 'mg'], [state.normal * sn, -state.normal * c, 'N'], [-state.friction * c, -state.friction * sn, state.resting ? 'fₛ' : 'fₖ']];
@@ -89,10 +97,12 @@ export function mount({ root, lang }) {
         label.textContent = `${name} = ${format(length, 1)} N`;
       });
     }
-    distance.set(state.displacement); acceleration.set(state.acceleration); critical.set(state.criticalAngle);
-    const message = !state.resting && time >= travelDuration(params, gravity) ? words.cutoff : state.resting ? words.resting : words.sliding;
-    api.feedback.textContent = message;
-    api.setDescription(`${words.caption}. ${words.distance}: ${format(state.displacement)} m. ${message}`);
+    if (updateReadouts) {
+      distance.set(state.displacement); acceleration.set(state.acceleration); critical.set(state.criticalAngle);
+      const message = !state.resting && time >= travelDuration(params, gravity) ? words.cutoff : state.resting ? words.resting : words.sliding;
+      setText(api.feedback, message);
+      api.setDescription(`${words.caption}. ${words.distance}: ${format(state.displacement)} m. ${message}`);
+    }
   }
   function setLanguage(next) {
     words = strings[next]; api.setLanguage(next);
