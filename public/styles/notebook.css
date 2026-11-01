@@ -24,7 +24,6 @@
 [data-illustration-style=notebook] .system-svg>circle[fill]{fill-opacity:.3}
 [data-illustration-style=notebook] .system-svg>g>rect.mass-body{fill:url(#notebook-hatching)}
 [data-illustration-style=notebook] .graph-card{border-radius:3px 6px 4px 7px}
-[data-illustration-style=notebook] .graph-card h3{font-family:Georgia,serif}
 [data-illustration-style=notebook] .stage .motion-graphs{box-shadow:2px 3px 0 #38483d12}
 [data-illustration-style=notebook] .transport .button{border-radius:4px 8px 5px 6px}
 @media(max-width:600px){[data-illustration-style=notebook] .hero-accent{letter-spacing:-1px}}

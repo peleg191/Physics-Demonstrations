@@ -12,7 +12,7 @@ import { bodyAnalysis } from './analysis.js';
 export function mount({ root, lang }) {
   let params = { ...defaultParameters }, words = strings[lang], scene;
   const gravity = physicsConfig.gravity; const controls = new Map();
-  const api = createExperiment({ root, lang, system: 'pulley', motion: () => motionModel(time => { const state = pulleyState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphPulleyNote' }), duration: () => travelDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '0 -20 800 560', mobileViewBox: '200 -20 400 560' });
+  const api = createExperiment({ root, lang, system: 'pulley', motion: () => motionModel(time => { const state = pulleyState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphPulleyNote' }), duration: () => travelDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '200 0 400 500' });
   let selected = null, pausedForAnalysis = false;
   const hint = element('p', 'analysis-hint'); hint.id = 'pulley-selection-hint'; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'pulley-analysis', onClose: closeAnalysis });
@@ -86,6 +86,12 @@ export function mount({ root, lang }) {
   }
   function render(time, { updateReadouts = true } = {}) {
     if (!scene) return;
+    api.setSceneViewBox(selected ? '140 0 520 560' : '200 0 400 500');
+    api.setGraphObstacles(selected
+      ? [{ left: 210, top: 60, width: 400, height: 490 }]
+      : [{ left: 310, top: 60, width: 180, height: 175 },
+        { left: 285, top: 210, width: 90, height: 235 },
+        { left: 425, top: 210, width: 90, height: 235 }]);
     if (api.clock.playing) pausedForAnalysis = false;
     for (const [body, mass] of [['mass1', scene.left], ['mass2', scene.right]]) {
       mass.group.setAttribute('aria-label', `${words.analyze}: ${words[body]}`);

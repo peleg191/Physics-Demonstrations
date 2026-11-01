@@ -2,7 +2,7 @@ import { addSketchOutlines, prepareSketchOutlines } from './core/sketch.js';
 import { resolveIllustrationStyle, illustrationSource } from './core/presentation.js';
 import { demonstrations } from './registry.js';
 import { translator } from './core/i18n.js';
-import { element } from './core/dom.js';
+import { element, svgElement } from './core/dom.js';
 import { createQuizBadge } from './core/quiz-badges.js';
 let savedStyle;
 try { savedStyle = localStorage.getItem('physics-illustration-style'); } catch { /* Storage is optional. */ }
@@ -113,12 +113,18 @@ function catalog() {
 }
 function demoHeading(entry) {
   const t = translator(lang); const top = element('div', 'demo-heading');
-  const back = element('a', 'back-link', `← ${t('back')}`); back.href = '#/';
+  const back = element('a', 'back-link'); back.href = '#/';
+  const backIcon = svgElement('svg', { class: 'back-link-icon', viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  svgElement('path', { d: 'M19 12H5m6-6-6 6 6 6' }, backIcon);
+  const backLabel = element('span', '', t('back')); back.append(backIcon, backLabel);
   const text = element('div', 'demo-heading-copy');
   const eyebrow = element('p', 'eyebrow', `${t('experiment')} / ${entry.number}`);
   const title = element('h1', '', entry.title[lang]); const description = element('p', 'demo-description', entry.description[lang]);
-  text.append(eyebrow, title, description); top.append(back, text);
-  return { top, update() { const next = translator(lang); back.textContent = `← ${next('back')}`; eyebrow.textContent = `${next('experiment')} / ${entry.number}`; title.textContent = entry.title[lang]; description.textContent = entry.description[lang]; } };
+  const titleRow = element('div', 'demo-title-row');
+  const actions = element('div', 'demo-heading-actions');
+  titleRow.append(title, actions);
+  text.append(eyebrow, titleRow, description); top.append(back, text);
+  return { top, actions, update() { const next = translator(lang); backLabel.textContent = next('back'); eyebrow.textContent = `${next('experiment')} / ${entry.number}`; title.textContent = entry.title[lang]; description.textContent = entry.description[lang]; } };
 }
 let heading = null;
 async function route() {
@@ -138,6 +144,8 @@ async function route() {
     const module = await entry.load();
     if (version !== routeVersion) return;
     mount.replaceChildren(); active = module.mount({ root: mount, lang });
+    const quiz = mount.querySelector('.system-quiz');
+    if (quiz) heading.actions.append(quiz);
   } catch (error) {
     if (version !== routeVersion) return;
     mount.replaceChildren(element('p', 'empty-state', translator(lang)('failed'))); console.error(error);

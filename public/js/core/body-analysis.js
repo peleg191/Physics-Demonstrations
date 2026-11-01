@@ -32,26 +32,12 @@ export function createBodyAnalysis({ parent, signal, onClose, id }) {
     }
   }
   let lastData = '', lastGroups = '';
-  let returnPosition = null, revealFrame;
-  const mobileLayout = matchMedia('(max-width: 600px), (max-width: 1000px) and (max-height: 600px) and (orientation: landscape)');
-  signal.addEventListener('abort', () => cancelAnimationFrame(revealFrame), { once: true });
   return {
     root,
     hide() {
-      cancelAnimationFrame(revealFrame);
       root.hidden = true;
-      if (returnPosition) globalThis.scrollTo?.({ ...returnPosition, behavior: 'instant' });
-      returnPosition = null;
     },
     update(data) {
-      if (root.hidden && mobileLayout.matches) {
-        returnPosition = { left: globalThis.scrollX ?? 0, top: globalThis.scrollY ?? 0 };
-        revealFrame = requestAnimationFrame(() => {
-          if (root.hidden || signal.aborted) return;
-          title.focus({ preventScroll: true });
-          title.scrollIntoView?.({ block: 'start', behavior: 'instant' });
-        });
-      }
       root.hidden = false;
       const signature = JSON.stringify(data);
       if (signature === lastData) return;

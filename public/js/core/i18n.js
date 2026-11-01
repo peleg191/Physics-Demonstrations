@@ -1,5 +1,7 @@
 const messages = {
   en: {
+    graphExpand: 'Expand graphs', graphBack: 'Back to simulation',
+    graphSelect: 'Choose graphs', graphMove: 'Move graphs. Drag or use arrow keys.', graphClose: 'Close graphs', graphResize: 'Resize graphs. Drag or use arrow keys.',
     showGraphs: 'Show motion graphs', motionGraphs: 'Motion over time', graphLayout: 'Graph layout', graphStacked: 'Stacked', graphBeside: 'Side by side',
     graphNote: 'Displacement from equilibrium. Each graph has its own scale; the dashed line marks the current time.',
     graphAngularNote: 'Angular displacement from equilibrium, in radians. Each graph has its own scale; the dashed line marks the current time.',
@@ -22,6 +24,8 @@ const messages = {
     defaultNote: 'Parameter changes restart the experiment.', meters: 'm', seconds: 's', kilograms: 'kg', ms: 'm/s',
   },
   he: {
+    graphExpand: 'הגדלת הגרפים', graphBack: 'חזרה להדמיה',
+    graphSelect: 'בחירת גרפים', graphMove: 'הזזת הגרפים בגרירה או במקשי החצים', graphClose: 'סגירת הגרפים', graphResize: 'שינוי גודל הגרפים בגרירה או במקשי החצים',
     showGraphs: 'הצגת גרפי תנועה', motionGraphs: 'תנועה לאורך זמן', graphLayout: 'סידור הגרפים', graphStacked: 'אחד מעל השני', graphBeside: 'זה לצד זה',
     graphNote: 'העתק מנקודת שיווי המשקל. לכל גרף קנה מידה משלו; הקו המקווקו מסמן את הזמן הנוכחי.',
     graphAngularNote: 'העתק זוויתי מנקודת שיווי המשקל, ברדיאנים. לכל גרף קנה מידה משלו; הקו המקווקו מסמן את הזמן הנוכחי.',

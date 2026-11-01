@@ -61,8 +61,18 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
   const resetNote = element('p', 'reset-note', t('defaultNote'));
   const assumptions = element('details', 'model-notes'); const summary = element('summary', '', t('assumptions')); const modelText = element('p');
   assumptions.append(summary, modelText); panel.append(panelTitle, panelNote, parameters, defaultButton, resetNote, assumptions);
-  if (quiz) panel.insertBefore(quiz.root, parameters);
   layout.append(stageColumn, panel); root.append(layout);
+  if (quiz) root.append(quiz.root);
+  const stackedLayout = matchMedia('(max-width: 900px), (max-width: 1000px) and (max-height: 600px) and (orientation: landscape)');
+  function placeParameters() {
+    if (stackedLayout.matches) {
+      stageColumn.insertBefore(panel, rateWrap);
+    } else {
+      layout.append(panel);
+    }
+  }
+  stackedLayout.addEventListener?.('change', placeParameters, { signal });
+  placeParameters();
   let lastReadout = -Infinity;
   const clock = createClock({ duration, onTick(time, playing, frame) {
     // Text is readable at 10 Hz; explicit actions and the final frame are exact.
@@ -78,19 +88,39 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
     play.setAttribute('aria-pressed', String(playing));
     step.disabled = clock.ended;
     render(time, { updateReadouts });
-    graphs?.update(time, time === 0 && !playing, updateReadouts);
+    graphs?.update(time, time === 0 && !playing);
   } });
-  const graphs = motion ? createMotionGraphs({ parent: stage, panel, signal, lang, duration, model: motion, time: () => clock.time }) : null;
-  const mobileLayout = matchMedia('(max-width: 600px), (max-width: 1000px) and (max-height: 600px) and (orientation: landscape)');
-  function placeGraphs() {
-    if (!graphs) return;
-    if (mobileLayout.matches) stageColumn.insertBefore(graphs.root, metrics);
-    else if (graphs.root.parentNode !== stage) stage.append(graphs.root);
+  let sceneObstacles = [], obstacleSignature = '';
+  function graphObstacles() {
+    const matrix = svg.getScreenCTM?.();
+    if (!matrix) return [];
+    const origin = stage.getBoundingClientRect();
+    const rectangles = sceneObstacles.map(rect => {
+      const points = [[rect.left, rect.top], [rect.left + rect.width, rect.top + rect.height]].map(([x, y]) => ({
+        x: matrix.a * x + matrix.c * y + matrix.e - origin.left,
+        y: matrix.b * x + matrix.d * y + matrix.f - origin.top,
+      }));
+      return { left: points[0].x, top: points[0].y, width: points[1].x - points[0].x, height: points[1].y - points[0].y };
+    });
+    for (const control of [transport, stageHead]) {
+      const bounds = control.getBoundingClientRect();
+      rectangles.push({ left: bounds.left - origin.left, top: bounds.top - origin.top, width: bounds.width, height: bounds.height });
+    }
+    return rectangles;
   }
-  mobileLayout.addEventListener?.('change', placeGraphs, { signal });
-  placeGraphs();
+  const graphs = motion ? createMotionGraphs({ parent: stage, panel, signal, lang, duration, model: motion, time: () => clock.time, obstacles: graphObstacles }) : null;
   const api = { stageColumn, svg, parameters, metrics, feedback, accessible, modelText, liveMark, signal, clock,
     get lang() { return currentLang; },
+    setGraphObstacles(rectangles) {
+      const signature = JSON.stringify(rectangles);
+      if (signature === obstacleSignature) return;
+      obstacleSignature = signature; sceneObstacles = rectangles;
+      if (stage.getBoundingClientRect) graphs?.fit();
+    },
+    setSceneViewBox(next, mobile = next) {
+      if (viewBox === next && mobileViewBox === mobile) return;
+      viewBox = next; mobileViewBox = mobile; resizeDiagram();
+    },
     setDescription(text) { setText(accessible, text); if (svg.getAttribute('aria-label') !== text) svg.setAttribute('aria-label', text); },
     setLanguage(next) {
       currentLang = next; t = translator(next);
@@ -104,7 +134,7 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
       const action = clock.playing ? 'pause' : clock.ended ? 'replay' : 'play';
       labelTransport(play, t(action), action);
     },
-    dispose() { controller.abort(); clock.dispose(); layout.remove(); },
+    dispose() { controller.abort(); clock.dispose(); quiz?.root.remove(); layout.remove(); },
   };
   const togglePlayback = () => clock.playing ? clock.pause() : clock.play();
   play.addEventListener('click', togglePlayback, { signal });

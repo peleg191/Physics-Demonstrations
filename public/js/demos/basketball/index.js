@@ -16,7 +16,7 @@ export function mount({ root, lang }) {
   const gravity = physicsConfig.gravity;
   let words = strings[lang], t = translator(lang), scene = null;
   const controls = new Map();
-  const api = createExperiment({ root, lang, system: 'basketball', motion: () => motionModel(time => { const state = projectileState(params, time, gravity); return [[state.x, state.y], [state.vx, state.vy], [state.ax, state.ay]]; }, { components: ['graphHorizontal', 'graphVertical'], note: 'graphProjectileNote' }), duration: () => flightDuration(params, gravity), render, reset: () => reset(), defaults });
+  const api = createExperiment({ root, lang, system: 'basketball', motion: () => motionModel(time => { const state = projectileState(params, time, gravity); return [[state.x, state.y], [state.vx, state.vy], [state.ax, state.ay]]; }, { components: ['graphHorizontal', 'graphVertical'], note: 'graphProjectileNote' }), duration: () => flightDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '25 55 750 425' });
   let selected = false, pausedForAnalysis = false;
   const hint = element('p', 'analysis-hint'); hint.id = 'basketball-selection-hint'; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'basketball-analysis', onClose: () => clearSelection(true) });
@@ -122,6 +122,15 @@ export function mount({ root, lang }) {
     svgText(svg, X(0) + 12, (Y(params.releaseHeight) + 410) / 2 + 14, `y₀ = ${format(params.releaseHeight, 1)} m`, { 'text-anchor': 'start', class: 'dimension height-label geometry-release' });
     s('circle', { cx: X(0), cy: 410, r: 3, fill: '#668363' }, svg);
     const hx = X(params.distance), hy = Y(params.hoopHeight);
+    const flightRegions = Array.from({ length: 16 }, (_, i) => {
+      const samples = [i, i + 0.5, i + 1].map(n => projectileState(params, end * n / 16, gravity));
+      const xs = samples.map(state => X(state.x)), ys = samples.map(state => Y(state.y));
+      return { left: Math.min(...xs) - 24, top: Math.min(...ys) - 24,
+        width: Math.max(...xs) - Math.min(...xs) + 48, height: Math.max(...ys) - Math.min(...ys) + 48 };
+    });
+    api.setGraphObstacles([...flightRegions,
+      { left: hx - 30, top: hy - 50, width: 90, height: 410 - hy + 85 },
+      { left: 45, top: 410, width: 710, height: 65 }]);
     s('path', { d: `M ${hx + 24} ${hy - 35} v ${410 - hy + 35} h -30`, stroke: '#8a9e80', 'stroke-width': 4, fill: 'none' }, svg);
     s('line', { x1: hx + 24, x2: hx + 24, y1: hy - 38, y2: hy + 7, stroke: '#607957', 'stroke-width': 5 }, svg);
     s('path', { d: `M ${hx - 15} ${hy + 2} l 6 28 h 19 l 6 -28 M ${hx - 12} ${hy + 13} l 25 10 M ${hx - 8} ${hy + 23} l 24 -10`, fill: 'none', stroke: '#9eac92', 'stroke-width': 1.4 }, svg);
@@ -143,9 +152,9 @@ export function mount({ root, lang }) {
     s('path', { d: 'M 0 0 H 40 M 33 -5 L 40 0 L 33 5 M 0 0 V -24 M -5 -17 L 0 -24 L 5 -17', fill: 'none', stroke: '#526452', 'stroke-width': 2 }, orientation);
     svgText(orientation, 48, 5, '+x'); svgText(orientation, -8, -30, '+y');
     const ball = s('g', { role: 'button', tabindex: 0, class: 'selectable-ball', 'aria-describedby': hint.id, 'aria-controls': 'basketball-analysis' }, svg);
-    s('circle', { r: 24, class: 'ball-hit', fill: 'transparent' }, ball);
-    s('circle', { r: 18, class: 'ball-selection', fill: 'none', stroke: '#203c35', 'stroke-width': 2, 'stroke-dasharray': '5 3', 'pointer-events': 'none' }, ball);
-    const artwork = s('g', { 'pointer-events': 'none' }, ball);
+    s('circle', { r: 32, class: 'ball-hit', fill: 'transparent' }, ball);
+    s('circle', { r: 24, class: 'ball-selection', fill: 'none', stroke: '#203c35', 'stroke-width': 2, 'stroke-dasharray': '5 3', 'pointer-events': 'none' }, ball);
+    const artwork = s('g', { 'pointer-events': 'none', transform: 'scale(1.5)' }, ball);
     s('circle', { r: 12, fill: '#e3a06a', stroke: '#b77a4b', 'stroke-width': 1 }, artwork);
     s('path', { d: 'M -10 -6 Q 0 5 10 -6 M -11 4 L 11 4 M 0 -12 Q -6 0 2 12', fill: 'none', stroke: '#a4673e', 'stroke-width': 1 }, artwork);
     const components = s('g', { class: 'velocity-components', 'pointer-events': 'none', 'aria-hidden': 'true' }, svg);
@@ -219,7 +228,7 @@ export function mount({ root, lang }) {
     const oldDisplay = showPrevious && previous ? 'inline' : 'none';
     if (scene.old.getAttribute('display') !== oldDisplay) scene.old.setAttribute('display', oldDisplay);
     scene.ball.setAttribute('transform', `translate(${scene.X(state.x)} ${scene.Y(Math.max(0, state.y))})`);
-    scene.artwork.setAttribute('transform', `rotate(${time * 110})`);
+    scene.artwork.setAttribute('transform', `rotate(${time * 110}) scale(1.5)`);
     scene.ball.setAttribute('aria-label', words.ballLabel);
     scene.ball.setAttribute('aria-pressed', String(selected));
     scene.orientation.setAttribute('display', selected ? 'inline' : 'none');

@@ -56,6 +56,12 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   function render(time, { updateReadouts = true } = {}) {
     if (!scene) return;
     const state = oscillatorState(params, time, gravity);
+    api.setSceneViewBox(pendulum ? `200 10 400 ${params.length * 95 + 160}` : '80 135 640 320');
+    api.setGraphObstacles(pendulum
+      ? [{ left: 280, top: 65, width: 280, height: params.length * 95 + 105 }]
+      : [{ left: 100, top: 170, width: 40, height: 190 },
+        { left: 165, top: 260, width: 460, height: 110 },
+        { left: 370, top: 375, width: 235, height: 65 }]);
     showInitialGeometry(scene.geometry, time, api.clock.playing);
     if (time === 0 && !api.clock.playing) {
       scene.geometry.replaceChildren();

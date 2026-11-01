@@ -3,11 +3,14 @@ import assert from 'node:assert/strict';
 import { setMaxListeners } from 'node:events';
 import { browserFixture } from './dom-fixture.js';
 import { demonstrations } from '../public/js/registry.js';
+import { createQuiz } from '../public/js/core/quiz.js';
 import { quizzes } from '../public/js/core/quiz-data.js';
 import { hasQuizBadge, awardQuizBadge, createQuizBadge } from '../public/js/core/quiz-badges.js';
 setMaxListeners(0);
 const hasClass = name => node => node.className.split(' ').includes(name);
 const descendants = node => [node, ...node.children.flatMap(descendants)];
+const readableText = node => node.tagName === 'math' ? node.getAttribute('aria-label') : node.children.length ? node.children.map(readableText).join('') : node.textContent;
+const plainCopy = text => text.replaceAll('$', '');
 
 for (const entry of demonstrations) {
   test(`${entry.id}: quiz grading, language changes, parameter edits and retry`, async () => {
@@ -19,6 +22,8 @@ for (const entry of demonstrations) {
       const launcher = descendants(root).find(hasClass('quiz-launcher'));
       const close = descendants(root).find(hasClass('quiz-close'));
       assert.equal(window.hidden, true);
+      assert.equal(launcher.children[0].tagName, 'svg');
+      assert.doesNotMatch(root.textContent, /Try four questions whenever you like/);
       launcher.dispatchEvent(new Event('click'));
       assert.equal(window.hidden, false);
       assert.equal(window.getAttribute('aria-modal'), 'false');
@@ -53,11 +58,13 @@ for (const entry of demonstrations) {
         action().dispatchEvent(new Event('click'));
         assert.ok(choices().every(node => node.disabled));
         let feedback = nodes().find(hasClass('quiz-feedback'));
-        assert.match(feedback.textContent, index % 2 ? /^Not quite\./ : /^Correct\./);
-        assert.ok(feedback.textContent.includes(question.explanation.en));
+        assert.match(readableText(feedback), index % 2 ? /^Not quite\./ : /^Correct\./);
+        assert.ok(readableText(feedback).includes(plainCopy(question.explanation.en)));
         demo.setLanguage('he');
+        assert.equal(launcher.children[0].tagName, 'svg');
+        assert.match(launcher.textContent, /בודקים את ההבנה/);
         feedback = nodes().find(hasClass('quiz-feedback'));
-        assert.ok(feedback.textContent.includes(question.explanation.he));
+        assert.ok(readableText(feedback).includes(plainCopy(question.explanation.he)));
         assert.equal(choices()[answer].checked, true);
         demo.setLanguage('en');
         action().dispatchEvent(new Event('click'));
@@ -115,4 +122,69 @@ test('badge storage survives a new card render and handles unavailable storage',
     if (originalStorage === undefined) delete globalThis.localStorage; else globalThis.localStorage = originalStorage;
     fixture.cleanup();
   }
+});
+
+
+test('mobile quiz keeps its fixed layout and starts new questions at the top', () => {
+  const fixture = browserFixture();
+  globalThis.matchMedia = () => ({ matches: true });
+  const controller = new AbortController();
+  try {
+    const quiz = createQuiz({ system: demonstrations[0].id, lang: 'en', signal: controller.signal });
+    fixture.root.append(quiz.root);
+    const title = fixture.find(node => node.tagName === 'h2');
+    assert.equal(title.getAttribute('aria-label'), title.textContent);
+    const pointer = new Event('pointerdown', { cancelable: true });
+    Object.defineProperty(pointer, 'button', { value: 0 });
+    title.dispatchEvent(pointer);
+    assert.equal(pointer.defaultPrevented, false);
+    const arrow = new Event('keydown', { cancelable: true });
+    Object.defineProperty(arrow, 'key', { value: 'ArrowDown' });
+    title.dispatchEvent(arrow);
+    assert.equal(arrow.defaultPrevented, false);
+    const body = fixture.find(hasClass('quiz-body'));
+    const action = () => descendants(body).find(node => node.tagName === 'button');
+    fixture.find(node => node.type === 'radio').dispatchEvent(new Event('change'));
+    action().dispatchEvent(new Event('click'));
+    assert.ok(hasClass('is-checked')(body));
+    assert.equal(action().disabled, false);
+    body.scrollTop = 300;
+    action().dispatchEvent(new Event('click'));
+    assert.equal(body.scrollTop, 0);
+    assert.equal(hasClass('is-checked')(body), false);
+    assert.equal(fixture.document.activeElement, fixture.find(hasClass('quiz-progress')));
+  } finally { controller.abort(); fixture.cleanup(); }
+});
+
+test('quiz mathematics uses inline MathML in Hebrew answers and feedback', () => {
+  const fixture = browserFixture(), controller = new AbortController();
+  try {
+    const quiz = createQuiz({ system: 'incline', lang: 'he', signal: controller.signal });
+    fixture.root.append(quiz.root);
+    const nodes = () => descendants(quiz.root);
+    const math = () => nodes().filter(node => node.tagName === 'math');
+    const action = () => nodes().find(node => node.tagName === 'button' && hasClass('primary')(node));
+    const choose = index => nodes().filter(node => node.type === 'radio')[index].dispatchEvent(new Event('change'));
+    assert.deepEqual(math().map(node => node.getAttribute('aria-label')), ['mg cos θ', 'mg', 'mg sin θ']);
+    assert.ok(nodes().some(node => node.tagName === 'mi' && node.textContent === 'sin'));
+    choose(0);
+    assert.equal(nodes().filter(hasClass('is-selected')).length, 1);
+    action().dispatchEvent(new Event('click'));
+    const feedback = nodes().find(hasClass('quiz-feedback'));
+    assert.equal(hasClass('is-incorrect')(feedback), true);
+    assert.ok(descendants(feedback).some(node => node.tagName === 'math'));
+    action().dispatchEvent(new Event('click'));
+    assert.ok(nodes().some(node => node.tagName === 'msub'));
+    for (const expression of math()) {
+      assert.equal(expression.getAttribute('display'), 'inline');
+      assert.equal(expression.getAttribute('dir'), 'ltr');
+      assert.equal(expression.getAttribute('class'), 'quiz-math');
+    }
+    const progress = nodes().find(node => node.tagName === 'progress');
+    assert.equal(progress.value, 2); assert.equal(progress.max, 4);
+    assert.doesNotMatch(quiz.root.textContent, /\$/);
+    quiz.setLanguage('en');
+    assert.ok(nodes().some(node => node.tagName === 'msub'));
+    assert.doesNotMatch(quiz.root.textContent, /\$/);
+  } finally { controller.abort(); fixture.cleanup(); }
 });

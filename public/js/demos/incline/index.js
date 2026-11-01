@@ -66,6 +66,13 @@ export function mount({ root, lang }) {
     // One physical metre always has the same scale along either screen axis.
     const scale = Math.min(95, 300 / (6 * Math.max(sn, 0.01))), startX = 120, startY = 100;
     const endX = startX + 6 * scale * c, endY = startY + 6 * scale * sn;
+    api.setSceneViewBox(`40 -25 ${Math.max(400, endX + 100 - 40)} ${Math.max(285, endY + 100)}`);
+    api.setGraphObstacles(Array.from({ length: 8 }, (_, i) => ({
+      left: startX + (endX - startX) * i / 8 - 40,
+      top: startY + (endY - startY) * i / 8 - 90,
+      width: (endX - startX) / 8 + 80,
+      height: endY - (startY + (endY - startY) * i / 8) + 130,
+    })));
     s('path', { d: `M ${startX} ${startY} L ${endX} ${endY} L ${startX} ${endY} Z`, fill: '#dce3d1', stroke: '#839775', 'stroke-width': 2 }, api.svg);
     s('line', { x1: startX, y1: startY, x2: startX + 95, y2: startY, stroke: '#8b9982', 'stroke-dasharray': '4 4' }, api.svg);
     const geometry = geometryLayer(api.svg);
@@ -78,9 +85,9 @@ export function mount({ root, lang }) {
       `θ = ${format(params.angle, 1)}°`, endX - 95, endY - 14);
     else geometryLabel(slopeAngle, endX - 70, endY + 28, 'θ = 0°');
     const block = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': 'incline-analysis', 'aria-describedby': hint.id }, api.svg);
-    s('circle', { class: 'mass-hit', cy: -24, r: 64, fill: 'transparent', 'aria-hidden': 'true' }, block);
-    s('rect', { class: 'mass-body', x: -24, y: -48, width: 48, height: 48, rx: 5, fill: '#61816b' }, block);
-    svgText(block, 0, -18, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
+    s('circle', { class: 'mass-hit', cy: -32, r: 64, fill: 'transparent', 'aria-hidden': 'true' }, block);
+    s('rect', { class: 'mass-body', x: -32, y: -64, width: 64, height: 64, rx: 5, fill: '#61816b' }, block);
+    svgText(block, 0, -26, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
     const forces = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, api.svg);
     const axes = s('g', { class: 'incline-force-axes' }, forces);
     const axisPaths = [s('path', {}, axes), s('path', {}, axes)];
@@ -105,7 +112,7 @@ export function mount({ root, lang }) {
     if (selected && updateReadouts) analysis.update(bodyAnalysis(words, state, paused, time >= travelDuration(params, gravity)));
     if (selected || resolved) {
       // All force arrows share the same scale, set by weight to fit the scene.
-      const forceScale = 60 / state.weight, cx = x + 24 * sn, cy = y - 24 * c;
+      const forceScale = 60 / state.weight, cx = x + 32 * sn, cy = y - 32 * c;
       scene.axes.setAttribute('display', resolved ? 'inline' : 'none');
       [[c, sn], [sn, -c]].forEach(([ux, uy], index) => {
         scene.axisPaths[index].setAttribute('d', `M ${cx - 75 * ux} ${cy - 75 * uy} L ${cx + 75 * ux} ${cy + 75 * uy}`);
