@@ -71,5 +71,5 @@ def bake(name):
 
 
 if __name__ == '__main__':
-    for illustration in ('basketball', 'pulley', 'spring', 'pendulum', 'incline'):
+    for illustration in ('basketball', 'pulley', 'spring', 'pendulum', 'incline', 'elevator'):
         bake(illustration)

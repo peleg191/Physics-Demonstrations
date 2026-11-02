@@ -35,4 +35,11 @@ export const demonstrations = [
     tags: { en: ['Hooke’s law', 'Harmonic motion'], he: ['חוק הוק', 'תנועה הרמונית'] },
     load: () => import('./demos/spring/index.js'),
   },
+  {
+    id: 'elevator', number: '06', topic: 'mechanics', illustration: './assets/elevator.svg',
+    title: { en: 'Accelerating elevator', he: 'מעלית מאיצה' },
+    description: { en: 'Step onto the scale. Explore how upward and downward acceleration change apparent weight.', he: 'עולים על המשקל וחוקרים כיצד תאוצה כלפי מעלה וכלפי מטה משנה את המשקל הנראה.' },
+    tags: { en: ['Newton’s laws', 'Apparent weight'], he: ['חוקי ניוטון', 'משקל נראה'] },
+    load: () => import('./demos/elevator/index.js'),
+  },
 ];

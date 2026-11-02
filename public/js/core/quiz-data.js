@@ -5,6 +5,20 @@ const q = (en, he, optionsEn, optionsHe, correct, explanationEn, explanationHe) 
 });
 
 export const quizzes = {
+  elevator: [
+    q('When the elevator accelerates upward, how does the scale reading compare with weight?', 'כשהמעלית מאיצה כלפי מעלה, כיצד קריאת המשקל משתווה לכוח הכובד?',
+      ['Greater than weight', 'Equal to weight', 'Less than weight'], ['גדולה מכוח הכובד', 'שווה לכוח הכובד', 'קטנה מכוח הכובד'], 0,
+      'The upward normal force must exceed weight to give an upward net force.', 'הכוח הנורמלי כלפי מעלה חייב להיות גדול מכוח הכובד כדי שהכוח השקול יהיה כלפי מעלה.'),
+    q('What does the scale measure?', 'מה מודד המשקל?',
+      ['The net force', 'The normal force on the person', 'The elevator acceleration'], ['את הכוח השקול', 'את הכוח הנורמלי על האדם', 'את תאוצת המעלית'], 1,
+      'The scale reads the contact force, expressed in newtons in this demonstration.', 'המשקל מציג את כוח המגע, הנמדד בניוטון בהדמיה זו.'),
+    q('What is the scale reading during free fall?', 'מהי קריאת המשקל בנפילה חופשית?',
+      ['Twice the weight', 'Equal to weight', 'Zero'], ['פי שניים מכוח הכובד', 'שווה לכוח הכובד', 'אפס'], 2,
+      'At downward acceleration g, gravity alone supplies the net force and the normal force is zero.', 'בתאוצה כלפי מטה בגודל g, כוח הכובד לבדו מספק את הכוח השקול והנורמל אפס.'),
+    q('At fixed acceleration, doubling the person’s mass changes the normal force how?', 'בתאוצה קבועה, כיצד הכפלת מסת האדם משנה את הכוח הנורמלי?',
+      ['It stays the same', 'It doubles', 'It halves'], ['הוא נשאר קבוע', 'הוא מוכפל', 'הוא קטן לחצי'], 1,
+      'The normal force is mass times the sum of gravity and signed acceleration.', 'הכוח הנורמלי שווה למסה כפול סכום תאוצת הכובד והתאוצה בעלת הסימן.'),
+  ],
   basketball: [
     q('At the highest point, which velocity component is zero?', 'בנקודה הגבוהה ביותר, איזה רכיב מהירות מתאפס?',
       ['Only the vertical component', 'Both components', 'Only the horizontal component'],
