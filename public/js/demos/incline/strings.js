@@ -2,7 +2,7 @@ export const strings = {
   en: {
     resolveForces: 'Resolve forces along the incline axes',
     resolveNote: 'x points downhill; y points away from the plane. Weight is replaced by mg sin θ downhill and mg cos θ into the plane. Normal force and friction already follow these axes.',
-    mass: 'Mass', angle: 'Slope angle', staticFriction: 'Static friction μₛ', kineticFriction: 'Kinetic friction μₖ',
+    mass: 'Mass', angle: 'Slope angle', staticFriction: 'Static friction', kineticFriction: 'Kinetic friction',
     distance: 'Distance down slope', acceleration: 'Acceleration', critical: 'Critical angle',
     caption: 'INCLINED PLANE · FRICTION',
     about: 'A block released from rest on a fixed plane in uniform gravity. Static friction adjusts up to μₛN; sliding friction is μₖN. Coefficients satisfy 0 ≤ μₖ ≤ μₛ. Motion beyond the plane is not modeled; playback stops after 4 m down the slope (or 4 s at rest).',
@@ -25,7 +25,7 @@ export const strings = {
   he: {
     resolveForces: 'פירוק הכוחות לצירים של המדרון',
     resolveNote: 'ציר x במורד המדרון; ציר y בניצב למישור וכלפי חוץ. המשקל מוחלף ברכיבים mg sin θ במורד ו־mg cos θ לתוך המישור. הכוח הנורמלי והחיכוך כבר מכוונים לאורך הצירים.',
-    mass: 'מסה', angle: 'זווית המדרון', staticFriction: 'מקדם חיכוך סטטי μₛ', kineticFriction: 'מקדם חיכוך קינטי μₖ',
+    mass: 'מסה', angle: 'זווית המדרון', staticFriction: 'מקדם חיכוך סטטי', kineticFriction: 'מקדם חיכוך קינטי',
     distance: 'מרחק במורד המדרון', acceleration: 'תאוצה', critical: 'זווית קריטית',
     caption: 'מישור משופע עם חיכוך',
     about: 'גוף משוחרר ממנוחה על מישור קבוע בשדה כבידה אחיד. החיכוך הסטטי מתאים את עצמו עד μₛN; החיכוך הקינטי הוא μₖN. המקדמים מקיימים 0 ≤ μₖ ≤ μₛ. ההדמיה נעצרת לאחר 4 מטרים במורד המדרון (או 4 שניות במנוחה). אין הדמיית מעוף.',
