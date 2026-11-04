@@ -11,7 +11,7 @@ let illustrationStyle = ['current', 'notebook'].includes(savedStyle)
 document.documentElement.dataset.illustrationStyle = illustrationStyle;
 let lang = 'en';
 try { const saved = localStorage.getItem('physics-language'); if (saved === 'he' || saved === 'en') lang = saved; } catch { /* Storage is optional. */ }
-let active = null, activeEntry = null, routeVersion = 0;
+let active = null, activeEntry = null, routeVersion = 0, catalogController = null;
 const main = document.querySelector('#main');
 const languageButton = document.querySelector('#language');
 const themeButton = document.querySelector('#theme');
@@ -61,10 +61,13 @@ function chrome() {
   languageButton.textContent = lang === 'en' ? 'עברית ↗' : 'English ↗'; languageButton.lang = lang === 'en' ? 'he' : 'en';
   document.title = `${activeEntry ? activeEntry.title[lang] + ' · ' : ''}${t('brand')}`;
 }
-function catalog() {
+function catalog(level = 'basic') {
+  catalogController = new AbortController();
+  const { signal } = catalogController;
+  const entries = demonstrations.filter(entry => (entry.level || 'basic') === level);
   const t = translator(lang);
   const hero = element('section', 'hero');
-  const copy = element('div', 'hero-copy'); copy.append(element('p', 'eyebrow', t('eyebrow')));
+  const copy = element('div', 'hero-copy');
   const heading = element('h1'); heading.append(document.createTextNode(t('hero')), element('span', 'hero-accent', t('heroAccent')));
   copy.append(heading, element('p', 'hero-intro', t('intro')));
   const art = element('div', 'hero-art'); art.setAttribute('aria-hidden', 'true');
@@ -88,50 +91,94 @@ function catalog() {
     </g>
     <path d="M316 222q8-25 16 0t16 0t16 0" stroke="var(--green)" stroke-width="2"/>
   </svg>`;
-  const count = element('p', 'experiment-count'); count.append(element('strong', '', String(demonstrations.length).padStart(2, '0')), document.createTextNode(t('count')));
+  const count = element('p', 'experiment-count'), countNumber = element('strong', '', String(entries.length).padStart(2, '0'));
+  count.append(countNumber, document.createTextNode(t('count')));
   hero.append(copy, art, count);
   const collection = element('section', 'collection');
   collection.setAttribute('aria-labelledby', 'collection-heading');
   const headingRow = element('div', 'collection-heading');
   const collectionTitle = element('h2', '', t('collectionTitle')); collectionTitle.id = 'collection-heading';
-  headingRow.append(collectionTitle, element('p', '', t('collectionNote')));
-  const grid = element('div', 'catalog-grid');
-  for (const entry of demonstrations) {
-    const card = element('a', `experiment-card ${entry.id}`); card.href = `#/${entry.id}`;
-    const imageArea = element('div', 'card-image'); const number = element('span', 'card-number', entry.number);
-    const image = element('img'); image.dataset.illustration = entry.illustration; image.src = illustrationSource(entry.illustration, illustrationStyle); image.alt = ''; image.width = 620; image.height = 280;
-    const topic = element('span', 'topic-pill', t(entry.topic)); imageArea.append(number, image, topic);
-    const badge = createQuizBadge(entry.id, lang); if (badge) imageArea.append(badge);
-    const content = element('div', 'card-content');
-    content.append(element('h3', '', entry.title[lang]), element('p', '', entry.description[lang]));
-    const bottom = element('div', 'card-bottom'); const tags = element('div', 'tags');
-    for (const tag of entry.tags[lang]) tags.append(element('span', '', tag));
-    const arrow = element('span', 'card-arrow', '↗'); arrow.setAttribute('aria-hidden', 'true'); bottom.append(tags, arrow);
-    content.append(bottom); card.append(imageArea, content); grid.append(card);
+  headingRow.append(collectionTitle);
+  const tabs = element('div', 'level-tabs'); tabs.setAttribute('role', 'tablist');
+  tabs.setAttribute('aria-label', lang === 'he' ? 'רמת ההדגמות' : 'Demonstration level');
+  const panel = element('div', 'catalog-panel'); panel.id = 'collection-panel';
+  panel.setAttribute('role', 'tabpanel'); panel.setAttribute('tabindex', '0');
+  const grid = element('div', 'catalog-grid'), tabButtons = new Map();
+  function selectLevel(next, updateUrl = true) {
+    if (updateUrl && next === level) return;
+    // Keep the panel's height while switching to a shorter collection, so the
+    // browser cannot clamp a visitor's current scroll position upward.
+    if (updateUrl) panel.style.minHeight = `${Math.ceil(panel.getBoundingClientRect().height)}px`;
+    level = next;
+    const nextEntries = demonstrations.filter(entry => (entry.level || 'basic') === level);
+    for (const [key, tab] of tabButtons) {
+      tab.setAttribute('aria-selected', String(key === level));
+      tab.setAttribute('tabindex', key === level ? '0' : '-1');
+    }
+    panel.setAttribute('aria-labelledby', `level-tab-${level}`);
+    countNumber.textContent = String(nextEntries.length).padStart(2, '0');
+    fillGrid(nextEntries);
+    if (updateUrl) {
+      const url = new URL(location.href); url.hash = level === 'basic' ? '#/' : '#/intermediate';
+      history.replaceState(null, '', url);
+    }
   }
-  collection.append(headingRow, grid); main.replaceChildren(hero, collection); prepareSketchOutlines(art);
+  for (const [key, en, he] of [['basic', 'Basic', 'בסיסי'], ['intermediate', 'Intermediate', 'ביניים']]) {
+    const tab = element('button', 'level-tab', lang === 'he' ? he : en); tab.type = 'button'; tab.id = `level-tab-${key}`;
+    tab.setAttribute('role', 'tab'); tab.setAttribute('aria-controls', panel.id);
+    tab.addEventListener('click', () => selectLevel(key), { signal });
+    tab.addEventListener('keydown', event => {
+      const keys = [...tabButtons.keys()], index = keys.indexOf(key), forward = lang === 'he' ? 'ArrowLeft' : 'ArrowRight';
+      let next;
+      if (event.key === 'Home') next = keys[0];
+      else if (event.key === 'End') next = keys.at(-1);
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') next = keys[(index + (event.key === forward ? 1 : -1) + keys.length) % keys.length];
+      if (next) { event.preventDefault(); selectLevel(next); tabButtons.get(next).focus({ preventScroll: true }); }
+    }, { signal });
+    tabButtons.set(key, tab); tabs.append(tab);
+  }
+  function fillGrid(nextEntries) {
+    grid.replaceChildren();
+    for (const entry of nextEntries) {
+      const card = element('a', `experiment-card ${entry.id}`); card.href = `#/${entry.id}`;
+      const imageArea = element('div', 'card-image'); const number = element('span', 'card-number', entry.number);
+      const image = element('img'); image.dataset.illustration = entry.illustration; image.src = illustrationSource(entry.illustration, illustrationStyle); image.alt = ''; image.width = 620; image.height = 280;
+      const topic = element('span', 'topic-pill', t(entry.topic)); imageArea.append(number, image, topic);
+      const badge = createQuizBadge(entry.id, lang); if (badge) imageArea.append(badge);
+      const content = element('div', 'card-content');
+      content.append(element('h3', '', entry.title[lang]), element('p', '', entry.description[lang]));
+      const bottom = element('div', 'card-bottom'); const tags = element('div', 'tags');
+      for (const tag of entry.tags[lang]) tags.append(element('span', '', tag));
+      const arrow = element('span', 'card-arrow', '↗'); arrow.setAttribute('aria-hidden', 'true'); bottom.append(tags, arrow);
+      content.append(bottom); card.append(imageArea, content); grid.append(card);
+    }
+  }
+  selectLevel(level, false);
+  panel.append(headingRow, grid); collection.append(tabs, panel);
+  window.addEventListener('resize', () => { panel.style.minHeight = ''; }, { signal });
+  main.replaceChildren(hero, collection); prepareSketchOutlines(art);
 }
 function demoHeading(entry) {
   const t = translator(lang); const top = element('div', 'demo-heading');
-  const back = element('a', 'back-link'); back.href = '#/';
+  const back = element('a', 'back-link'); back.href = entry.level === 'intermediate' ? '#/intermediate' : '#/';
   const backIcon = svgElement('svg', { class: 'back-link-icon', viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
   svgElement('path', { d: 'M19 12H5m6-6-6 6 6 6' }, backIcon);
   const backLabel = element('span', '', t('back')); back.append(backIcon, backLabel);
   const text = element('div', 'demo-heading-copy');
-  const eyebrow = element('p', 'eyebrow', `${t('experiment')} / ${entry.number}`);
   const title = element('h1', '', entry.title[lang]); const description = element('p', 'demo-description', entry.description[lang]);
   const titleRow = element('div', 'demo-title-row');
   const actions = element('div', 'demo-heading-actions');
   titleRow.append(title, actions);
-  text.append(eyebrow, titleRow, description); top.append(back, text);
-  return { top, actions, update() { const next = translator(lang); backLabel.textContent = next('back'); eyebrow.textContent = `${next('experiment')} / ${entry.number}`; title.textContent = entry.title[lang]; description.textContent = entry.description[lang]; } };
+  text.append(titleRow, description); top.append(back, text);
+  return { top, actions, update() { const next = translator(lang); backLabel.textContent = next('back'); title.textContent = entry.title[lang]; description.textContent = entry.description[lang]; } };
 }
 let heading = null;
 async function route() {
   const version = ++routeVersion;
+  catalogController?.abort(); catalogController = null;
   active?.dispose(); active = null; activeEntry = null; heading = null;
   const id = location.hash.replace(/^#\/?/, '').split('?')[0];
-  if (!id) { main.className = 'home'; catalog(); chrome(); return; }
+  if (!id || id === 'intermediate') { main.className = 'home'; catalog(id === 'intermediate' ? 'intermediate' : 'basic'); chrome(); return; }
   const entry = demonstrations.find(item => item.id === id);
   main.className = 'demo-page';
   if (!entry) {

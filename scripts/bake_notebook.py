@@ -71,5 +71,7 @@ def bake(name):
 
 
 if __name__ == '__main__':
-    for illustration in ('basketball', 'pulley', 'spring', 'pendulum', 'incline', 'elevator'):
-        bake(illustration)
+    # Include newly added catalog SVGs automatically; the favicon is UI chrome.
+    for illustration in sorted(ROOT.glob('*.svg')):
+        if illustration.stem != 'favicon':
+            bake(illustration.stem)

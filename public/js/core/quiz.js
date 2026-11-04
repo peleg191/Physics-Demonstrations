@@ -1,3 +1,4 @@
+import { latexExpression } from './latex.js';
 import { renderMath, row, identifier, subscript, trig } from './math.js';
 import { element, button, svgElement } from './dom.js';
 import { quizzes } from './quiz-data.js';
@@ -38,7 +39,7 @@ function quizText(tag, className, text) {
   let position = 0;
   for (const match of text.matchAll(/\$([^$]+)\$/g)) {
     if (match.index > position) node.append(element('span', '', text.slice(position, match.index)));
-    const math = renderMath({ text: match[1], label: match[1], expression: formulas[match[1]] });
+    const math = renderMath({ text: match[1], label: match[1], expression: formulas[match[1]] || (/[\\_^]/.test(match[1]) ? latexExpression(match[1]) : undefined) });
     math.setAttribute('display', 'inline'); math.setAttribute('class', 'quiz-math'); node.append(math);
     position = match.index + match[0].length;
   }

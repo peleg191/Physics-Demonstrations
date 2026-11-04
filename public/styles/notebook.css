@@ -31,3 +31,5 @@
 .pencil-outline{display:none}
 [data-illustration-style=notebook] .pencil-outline{display:inline}
 .style-button[aria-pressed=true]{border-color:var(--green);background:var(--accent-soft);color:var(--green)}
+
+[data-illustration-style=notebook] .brand-mark{--ink:#303f4c;--muted:#70808a;--green:#416f68;background:var(--notebook-sheet);color:var(--ink)}

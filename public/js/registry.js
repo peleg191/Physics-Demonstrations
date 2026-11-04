@@ -42,4 +42,25 @@ export const demonstrations = [
     tags: { en: ['Newton’s laws', 'Apparent weight'], he: ['חוקי ניוטון', 'משקל נראה'] },
     load: () => import('./demos/elevator/index.js'),
   },
+  {
+    id: 'friction-stacked', number: '07', level: 'intermediate', topic: 'mechanics', illustration: './assets/friction-stacked.svg',
+    title: { en: 'Stacked blocks', he: 'גופים מונחים זה על זה' },
+    description: { en: 'Find the force that makes the upper block slip.', he: 'מצאו את הכוח שיגרום לגוף העליון להחליק.' },
+    tags: { en: ['Friction', 'Coupled systems'], he: ['חיכוך', 'מערכות מצומדות'] },
+    load: () => import('./demos/friction/stacked.js'),
+  },
+  {
+    id: 'friction-table', number: '08', level: 'intermediate', topic: 'mechanics', illustration: './assets/friction-table.svg',
+    title: { en: 'Table and slope pulley', he: 'גלגלת בין שולחן למדרון' },
+    description: { en: 'Solve for acceleration and tension with friction on the table.', he: 'מצאו תאוצה ומתיחות כאשר יש חיכוך בשולחן.' },
+    tags: { en: ['Friction', 'Coupled systems'], he: ['חיכוך', 'מערכות מצומדות'] },
+    load: () => import('./demos/friction/table.js'),
+  },
+  {
+    id: 'friction-hanging', number: '09', level: 'intermediate', topic: 'mechanics', illustration: './assets/friction-hanging.svg',
+    title: { en: 'Hanging mass and rough slope', he: 'מסה תלויה ומדרון מחוספס' },
+    description: { en: 'Solve both sliding directions and track the sign of friction.', he: 'פותרים את שני כיווני ההחלקה ועוקבים אחר כיוון החיכוך.' },
+    tags: { en: ['Friction', 'Coupled systems'], he: ['חיכוך', 'מערכות מצומדות'] },
+    load: () => import('./demos/friction/hanging.js'),
+  },
 ];

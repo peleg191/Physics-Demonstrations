@@ -22,11 +22,12 @@ for (const entry of demonstrations) {
       toggle.checked = true; toggle.dispatchEvent(new Event('change'));
       assert.equal(root.hidden, false);
       assert.match(stage.className, /has-graphs/);
+      const multiSeries = ['basketball', 'friction-stacked'].includes(entry.id);
       const legends = descendants(root, hasClass('graph-legend'));
-      assert.equal(legends.length, entry.id === 'basketball' ? 1 : 0);
+      assert.equal(legends.length, multiSeries ? 1 : 0);
       for (const legend of legends) {
-        assert.match(legend.textContent, /Horizontal motion \(x\) · solid/);
-        assert.match(legend.textContent, /Vertical motion \(y\) · dashed/);
+        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Upper block · solid/ : /Horizontal motion \(x\) · solid/);
+        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Lower block · dashed/ : /Vertical motion \(y\) · dashed/);
       }
       const charts = descendants(root, node => node.tagName === 'svg');
       assert.equal(charts.length, 3);
@@ -41,7 +42,7 @@ for (const entry of demonstrations) {
       assert.ok(descendants(labels[2], node => node.tagName === 'msup').length);
       assert.equal(descendants(root, node => node.tagName === 'tspan' && node.textContent === ' [s]').length, 3);
       const curves = descendants(root, node => (node.getAttribute('class') ?? '').includes('graph-curve'));
-      assert.equal(curves.length, entry.id === 'basketball' ? 6 : 3);
+      assert.equal(curves.length, multiSeries ? 6 : 3);
       for (const curve of curves) assert.doesNotMatch(curve.getAttribute('d'), /NaN|Infinity/);
       const cursor = descendants(root, node => node.getAttribute('class') === 'graph-cursor')[0];
       const initialCursor = cursor.getAttribute('d');

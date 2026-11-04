@@ -1,5 +1,7 @@
 const messages = {
   en: {
+    graphUpperBlock: 'Upper block · solid', graphLowerBlock: 'Lower block · dashed',
+    graphStackedNote: 'Both blocks start at the same position. Their curves separate when the blocks slip. Rightward is positive.',
     graphExpand: 'Expand graphs', graphBack: 'Back to simulation',
     graphSelect: 'Choose graphs', graphMove: 'Move graphs. Drag or use arrow keys.', graphClose: 'Close graphs', graphResize: 'Resize graphs. Drag or use arrow keys.',
     showGraphs: 'Show motion graphs', motionGraphs: 'Motion over time', graphLayout: 'Graph layout', graphStacked: 'Stacked', graphBeside: 'Side by side',
@@ -13,7 +15,7 @@ const messages = {
     brand: 'physics playground', collection: 'The collection', skip: 'Skip to content', nav: 'Main navigation',
     footer: 'Physics Playground', footerNote: 'Peleg Haham',
     eyebrow: 'AN OPEN LAB FOR CURIOUS MINDS', hero: 'Get a feel for', heroAccent: 'how things move.',
-    intro: 'A collection of small experiments with big ideas. Change something, see what happens, and let your intuition catch up.',
+    intro: 'Change something, see what happens, and let your intuition catch up',
     count: 'experiments to explore', collectionTitle: 'Pick a system. Start exploring.', collectionNote: 'No instructions to follow. Just possibilities to try.',
     open: 'Open experiment', mechanics: 'Mechanics', lab: 'THE COLLECTION',
     back: 'All experiments', experiment: 'INTERACTIVE EXPERIMENT', parameters: 'Make it your own', parametersNote: 'Change a value. See a different story.',
@@ -24,6 +26,8 @@ const messages = {
     defaultNote: 'Parameter changes restart the experiment.', meters: 'm', seconds: 's', kilograms: 'kg', ms: 'm/s',
   },
   he: {
+    graphUpperBlock: 'הגוף העליון · קו רציף', graphLowerBlock: 'הגוף התחתון · קו מקווקו',
+    graphStackedNote: 'שני הגופים מתחילים באותו מיקום. העקומים נפרדים כאשר יש החלקה. הכיוון החיובי הוא ימינה.',
     graphExpand: 'הגדלת הגרפים', graphBack: 'חזרה להדמיה',
     graphSelect: 'בחירת גרפים', graphMove: 'הזזת הגרפים בגרירה או במקשי החצים', graphClose: 'סגירת הגרפים', graphResize: 'שינוי גודל הגרפים בגרירה או במקשי החצים',
     showGraphs: 'הצגת גרפי תנועה', motionGraphs: 'תנועה לאורך זמן', graphLayout: 'סידור הגרפים', graphStacked: 'אחד מעל השני', graphBeside: 'זה לצד זה',
@@ -37,7 +41,7 @@ const messages = {
     brand: 'מגרש משחקים לפיזיקה', collection: 'אוסף הניסויים', skip: 'דילוג לתוכן', nav: 'ניווט ראשי',
     footer: 'Physics Playground', footerNote: 'Peleg Haham',
     eyebrow: 'מעבדה פתוחה לסקרנות', hero: 'להרגיש איך', heroAccent: 'דברים זזים.',
-    intro: 'אוסף של ניסויים קטנים עם רעיונות גדולים. משנים משהו, רואים מה קורה, ומפתחים אינטואיציה.',
+    intro: 'משנים משהו, רואים מה קורה, ונותנים לאינטואיציה להדביק את הקצב.',
     count: 'ניסויים שאפשר לחקור', collectionTitle: 'בוחרים מערכת. מתחילים לחקור.', collectionNote: 'בלי מסלול קבוע. פשוט לנסות ולגלות.',
     open: 'פתיחת הניסוי', mechanics: 'מכניקה', lab: 'אוסף הניסויים',
     back: 'כל הניסויים', experiment: 'ניסוי אינטראקטיבי', parameters: 'עכשיו תורכם לשנות', parametersNote: 'משנים ערך. רואים סיפור אחר.',

@@ -26,7 +26,7 @@ export function createBodyAnalysis({ parent, signal, onClose, id }) {
     sectionSignatures.set(container, signature);
     container.replaceChildren();
     for (const item of items) {
-      const p = element(item.math ? 'div' : 'p', item.math ? 'equation' : '', item.math ? undefined : item.text);
+      const p = element(item.heading ? 'h3' : item.math ? 'div' : 'p', item.math ? 'equation' : '', item.math ? undefined : item.text);
       if (item.math) { p.setAttribute('dir', 'ltr'); p.append(renderMath(item)); }
       container.append(p);
     }

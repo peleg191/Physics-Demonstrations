@@ -111,6 +111,10 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
   const graphs = motion ? createMotionGraphs({ parent: stage, panel, signal, lang, duration, model: motion, time: () => clock.time, obstacles: graphObstacles }) : null;
   const api = { stageColumn, svg, parameters, metrics, feedback, accessible, modelText, liveMark, signal, clock,
     get lang() { return currentLang; },
+    setPlaybackRate(value) {
+      if (![1, 0.25].includes(value)) return;
+      rate.value = String(value); clock.setRate(value);
+    },
     setGraphObstacles(rectangles) {
       const signature = JSON.stringify(rectangles);
       if (signature === obstacleSignature) return;

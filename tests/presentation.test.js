@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { access } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { presentationConfig } from '../public/js/config.js';
 import { resolveIllustrationStyle, illustrationSource } from '../public/js/core/presentation.js';
 import { demonstrations } from '../public/js/registry.js';
@@ -21,5 +21,11 @@ test('each catalog illustration has a separate notebook asset while its original
     assert.equal(original, entry.illustration);
     assert.notEqual(sketch, original);
     await Promise.all([access(new URL(`../public/${original}`, import.meta.url)), access(new URL(`../public/${sketch}`, import.meta.url))]);
+    const [originalArt, notebookArt] = await Promise.all([
+      readFile(new URL(`../public/${original}`, import.meta.url), 'utf8'),
+      readFile(new URL(`../public/${sketch}`, import.meta.url), 'utf8'),
+    ]);
+    assert.notEqual(notebookArt, originalArt, `${entry.id}: notebook artwork must have its own treatment`);
+    assert.match(notebookArt, /stroke-width="\.85"/, `${entry.id}: expected pencil outlines`);
   }
 });

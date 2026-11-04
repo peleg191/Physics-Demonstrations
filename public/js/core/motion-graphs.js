@@ -174,7 +174,8 @@ export function createMotionGraphs({ parent, panel, signal, lang, duration, mode
       let low = Math.min(0, ...values), high = Math.max(0, ...values);
       const padding = (high - low || Math.max(Math.abs(high), 1)) * 0.12;
       low -= padding; high += padding;
-      const x = time => 62 + time / end * 398;
+      // An onset-only model can have a zero-duration observation.
+      const x = time => end > 0 ? 62 + time / end * 398 : 62;
       const y = value => 184 - (value - low) / (high - low) * 160;
       for (const level of [low, 0, high]) {
         s('path', { d: `M 62 ${y(level)} H 460`, class: level === 0 ? 'graph-axis' : 'graph-gridline' }, svg);
