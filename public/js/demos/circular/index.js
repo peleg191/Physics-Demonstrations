@@ -10,6 +10,7 @@ import { prepareSketchOutlines } from '../../core/sketch.js';
 import { physicsConfig } from '../../config.js';
 import { defaults as modelDefaults, models, duration } from './physics.js';
 import { wordsFor } from './strings.js';
+import { renderLatex } from '../../core/latex.js';
 import { circularAnalysis } from './analysis.js';
 
 const specsFor = kind => [
@@ -119,11 +120,19 @@ export function mountCircularSystem(kind, { root, lang }) {
     body = mass(450, 240); topMass = mass(720, 250);
   }
   const warning = svgText(api.svg, 400, 455, '', { class: 'circular-status', 'text-anchor': 'middle' });
+  let tubeWarning;
+  if (tube) {
+    const box = s('foreignObject', { x: 100, y: 424, width: 600, height: 64, 'pointer-events': 'none' }, api.svg);
+    tubeWarning = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
+    tubeWarning.style.textAlign = 'center';
+    tubeWarning.append(renderLatex(String.raw`f > f_{\mathrm{max}} = \frac{1}{2\pi}\sqrt{\frac{\mu_s g}{r}}`));
+    box.append(tubeWarning);
+  }
   const forceLayer = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, api.svg);
   const forceAxes = bowl ? s('g', { class: 'bowl-force-axes' }, forceLayer) : null;
   const axisPaths = bowl ? [0, 1].map(() => s('path', { fill: 'none', stroke: '#839775', 'stroke-width': 1.3, 'stroke-dasharray': '4 5' }, forceAxes)) : [];
   const axisLabels = bowl ? ['+r', '+t'].map(text => svgText(forceAxes, 0, 0, text)) : [];
-  const arrows = Array.from({ length: 4 }, (_, index) => ({
+  const arrows = Array.from({ length: 5 }, (_, index) => ({
     path: s('path', { fill: 'none', stroke: index === 1 ? '#9a451b' : '#174d77', 'stroke-width': 3 }, forceLayer),
     label: svgText(forceLayer, 0, 0, '', { class: 'force-label', 'text-anchor': 'middle' }),
   }));
@@ -166,18 +175,24 @@ export function mountCircularSystem(kind, { root, lang }) {
         });
       } else arrow(1, x, y, 0, state.weight * scale, 'mg', x - 28, y + state.weight * scale + 16);
     } else if (tube) {
-      x = 270 + 140 * c; y = 250 + 140 * sn;
+      const radialScale = state.radius / params.radius;
+      x = 270 + 140 * radialScale * c; y = 250 + 140 * radialScale * sn;
       support.setAttribute('transform', `translate(270 250) rotate(${state.phase * 180 / Math.PI})`);
-      const sideX = 620 + 100 * c;
+      const sideX = 620 + 100 * radialScale * c;
       const sidePath = `M ${620 - 12 / 140 * 100 * c} 250 H ${620 + 183 / 140 * 100 * c}`;
       sideTube.setAttribute('d', sidePath); sideTubeInner.setAttribute('d', sidePath);
       sideMass.setAttribute('transform', `translate(${sideX} 250)`);
       arrow(0, sideX, 250, 0, -80, 'N', sideX + 32, 164);
       arrow(1, sideX, 250, 0, 80, 'mg', sideX + 32, 340);
-      if (state.valid) {
-        const length = state.limit > 0 ? 80 * state.required / state.limit : 0;
-        arrow(2, sideX, 250, -length * c, 0, Math.abs(c) < 0.08 ? `fₛ ${sn > 0 ? '⊗' : '⊙'}` : 'fₛ', sideX - length * c / 2, 215);
-        arrow(3, x, y, -length * c, -length * sn, 'fₛ');
+      {
+        const frictionLabel = state.valid ? 'fₛ' : 'fₖ';
+        const length = state.limit > 0 ? 80 * state.frictionForce / state.limit : 0;
+        arrow(2, sideX, 250, -length * c, 0, Math.abs(c) < 0.08 ? `${frictionLabel} ${sn > 0 ? '⊗' : '⊙'}` : frictionLabel, sideX - length * c / 2, 215);
+        arrow(3, x, y, -length * c, -length * sn, frictionLabel);
+        if (!state.valid && state.wallForce > 0) {
+          const wallLength = 80 * state.wallForce / Math.max(state.wallForce, state.limit);
+          arrow(4, x, y, -wallLength * sn, wallLength * c, 'N_wall');
+        }
       }
     } else {
       sideScale = Math.min(165 / state.radius, 150 / (params.separation / 2));
@@ -225,9 +240,10 @@ export function mountCircularSystem(kind, { root, lang }) {
     if (!updateReadouts) return;
     for (const reading of readings) reading.set(state[reading.key]);
     const ended = time >= duration(kind, params, gravity);
-    const message = !state.valid ? words.invalid : ended ? bowl ? words.bowlEnd : words.circularEnd : words.moving;
+    const message = tube && !state.valid && ended ? words.slidingEnd : !state.valid ? words.invalid : ended ? bowl ? words.bowlEnd : words.circularEnd : words.moving;
     setText(api.feedback, message);
-    setText(warning, !state.valid ? tube ? 'f_required > μₛmg' : 'T₂ < 0' : '');
+    setText(warning, !state.valid && !tube ? 'T₂ < 0' : '');
+    if (tubeWarning) tubeWarning.parentNode.setAttribute('display', state.valid ? 'none' : 'inline');
     api.setDescription(`${words.caption}. ${message} ${words.speed}: ${state.speed.toFixed(2)} m/s.`);
     if (selected) analysis.update(circularAnalysis(kind, words, state, paused, ended));
   }

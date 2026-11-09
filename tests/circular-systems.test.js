@@ -23,7 +23,7 @@ test('tube: friction threshold, hertz conversion and radius bound match the forc
     near(result.maximumFrequency, state.maximumFrequency); near(result.limit, mass * 2);
   }
   const unsupported = tubeState({ ...params, friction: 0 }, 0.5);
-  assert.equal(unsupported.valid, false); near(unsupported.phase, 0); near(unsupported.velocity, 0);
+  assert.equal(unsupported.valid, false); assert.ok(unsupported.phase > 0); assert.ok(unsupported.radius > params.radius);
 });
 
 test('two strings: geometry, independent force balances, and slack-string boundary', () => {
@@ -248,4 +248,21 @@ test('bowl worked solution uses zero height at A and substitutes the values at A
     }
     demo.setLanguage('he'); assert.match(panel.textContent, /בשפה A/); assert.match(panel.textContent, /פתרון בנקודות/);
   } finally { demo?.dispose(); fixture.cleanup(); }
+});
+
+
+test('tube sliding grows outward, obeys the constrained force balance and stops at the mouth', () => {
+  const params = { ...defaults['rotating-tube'], frequency: 1 };
+  const initial = tubeState(params, 0), t = initial.exitTime / 2;
+  const state = tubeState(params, t), dt = 1e-5;
+  assert.ok(state.radius > params.radius);
+  assert.ok(state.radialSpeed > 0);
+  near(state.phase, state.omega * t);
+  near(state.frictionForce, state.limit);
+  near(state.wallForce, 2 * params.mass * state.omega * state.radialSpeed);
+  near((tubeState(params, t + dt).position - tubeState(params, t - dt).position) / (2 * dt), state.velocity, 1e-6);
+  near((tubeState(params, t + dt).velocity - tubeState(params, t - dt).velocity) / (2 * dt), state.acceleration, 1e-5);
+  near(duration('rotating-tube', params), initial.exitTime);
+  near(tubeState(params, initial.exitTime).radius, params.radius * 183 / 140);
+  near(tubeState(params, initial.exitTime * 100).radius, params.radius * 183 / 140);
 });

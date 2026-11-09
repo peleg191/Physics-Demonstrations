@@ -5,10 +5,11 @@ const prose = text => ({ text });
 const cos = theta => trig('cos', i(theta)), sin = theta => trig('sin', i(theta));
 export function circularAnalysis(kind, words, state, paused, ended) {
   const data = { title: words.title, close: words.close, notice: paused ? words.paused : '', axis: words.axis,
-    cutoff: !state.valid ? words.invalid : ended ? kind === 'energy-bowl' ? words.bowlEnd : words.circularEnd : '',
+    cutoff: kind === 'rotating-tube' && !state.valid && ended ? words.slidingEnd : !state.valid ? words.invalid : ended ? kind === 'energy-bowl' ? words.bowlEnd : words.circularEnd : '',
     solutionTitle: words.derive, equations: [], solution: [prose(words.explanation)] };
   if (kind === 'rotating-tube') {
     data.equations = [math('N − mg = 0'), math('fₛ = mω²r ≤ μₛmg')];
+    if (!state.valid) data.equations = [math('N − mg = 0'), math('fₖ = μₖmg; μₖ = μₛ'), math('r̈ = ω²r − μₖg'), math('N_wall = 2mωṙ')];
     data.solution.push(math('ω = 2πf'), math('ω²r ≤ μₛg'),
       math('f_max = (1/2π)√(μₛg/r)', row(subscript(i('f'), ['mtext', 'max']), e('='), f(e('1'), e('2π')), ['msqrt', f(e('μₛg'), i('r'))])),
       math('r_max = μₛg/(2πf)²', row(subscript(i('r'), ['mtext', 'max']), e('='), f(e('μₛg'), pow(e('(2πf)'), 2)))));

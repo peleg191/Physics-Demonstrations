@@ -8,12 +8,27 @@ export function tubeState(params, time, gravity = 10) {
   const omega = 2 * Math.PI * params.frequency, required = params.mass * omega ** 2 * params.radius;
   const weight = params.mass * gravity, limit = params.friction * weight;
   const valid = required <= limit + 1e-10;
-  const phase = valid ? omega * time : 0, speed = omega * params.radius;
-  return { valid, phase, omega, weight, normal: weight, required, limit, speed,
+  // The tube constrains angular motion. During outward sliding, use μ_k = μ_s.
+  // r'' = ω²r − μ_k g; stop at the open end shown in the diagram.
+  const equilibrium = omega ? params.friction * gravity / omega ** 2 : 0;
+  const endRadius = params.radius * 183 / 140;
+  const exitTime = valid ? Infinity : Math.acosh((endRadius - equilibrium) / (params.radius - equilibrium)) / omega;
+  const elapsed = Math.max(0, Math.min(time, exitTime));
+  const phase = omega * elapsed;
+  const radius = valid ? params.radius : equilibrium + (params.radius - equilibrium) * Math.cosh(omega * elapsed);
+  const radialSpeed = valid ? 0 : omega * (params.radius - equilibrium) * Math.sinh(omega * elapsed);
+  const radialAcceleration = valid ? 0 : omega ** 2 * radius - params.friction * gravity;
+  const cosine = Math.cos(phase), sine = Math.sin(phase);
+  return { valid, phase, omega, weight, normal: weight, required, limit,
+    radius, radialSpeed, exitTime, frictionForce: valid ? required : limit,
+    wallForce: 2 * params.mass * omega * radialSpeed,
+    speed: Math.hypot(radialSpeed, omega * radius),
     maximumFrequency: Math.sqrt(params.friction * gravity / params.radius) / (2 * Math.PI),
-    maximumRadius: params.friction * gravity / omega ** 2, period: 1 / params.frequency,
-    position: params.radius * Math.cos(phase), velocity: valid ? -speed * Math.sin(phase) : 0,
-    acceleration: valid ? -(omega ** 2) * params.radius * Math.cos(phase) : 0 };
+    maximumRadius: omega ? equilibrium : Infinity, period: 1 / params.frequency,
+    position: radius * cosine,
+    velocity: radialSpeed * cosine - omega * radius * sine,
+    acceleration: (radialAcceleration - omega ** 2 * radius) * cosine - 2 * omega * radialSpeed * sine };
+
 }
 export function twoStringState(params, time, gravity = 10) {
   const { mass, length, separation, frequency } = params;
@@ -75,4 +90,6 @@ export function bowlState(params, time, gravity = 10) {
     acceleration: radius * cosine * angularAcceleration - radius * sine * angularVelocity ** 2 };
 }
 export const models = { 'rotating-tube': tubeState, 'two-string': twoStringState, 'energy-bowl': bowlState };
-export function duration(kind, params, gravity = 10) { return (kind === 'energy-bowl' ? 2 : 4) * models[kind](params, 0, gravity).period; }
+export function duration(kind, params, gravity = 10) {
+  if (kind === 'rotating-tube') { const state = tubeState(params, 0, gravity); if (!state.valid) return state.exitTime; }
+  return (kind === 'energy-bowl' ? 2 : 4) * models[kind](params, 0, gravity).period; }
