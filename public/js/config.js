@@ -3,3 +3,6 @@ export const physicsConfig = Object.freeze({ gravity: 10 });
 
 // 'current' preserves the original design; 'notebook' enables the sketch treatment.
 export const presentationConfig = Object.freeze({ illustrationStyle: 'current' });
+
+// Carousel presentation only; disabling the trail preserves the ball's depth cues.
+export const carouselConfig = Object.freeze({ showTrail: true });

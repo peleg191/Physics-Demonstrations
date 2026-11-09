@@ -26,7 +26,7 @@ for (const path of files) {
     : path.endsWith('.html') ? [...text.matchAll(/(?:src|href)="(\.\.?\/[^"#]+)"/g)].map(m => m[1])
     : path.endsWith('.css') ? [...text.matchAll(/url\(['"]?(\.\.?\/[^)'"]+)['"]?\)/g)].map(m => m[1]) : [];
   for (const ref of refs) {
-    const target = resolve(dirname(path), ref);
+    const target = resolve(dirname(path), ref.split(/[?#]/, 1)[0]);
     if (relative(root, target).startsWith('..')) throw new Error(`Asset outside public directory: ${ref}`);
     if (!(await lstat(target)).isFile()) throw new Error(`Missing asset ${target}`);
   }

@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setMaxListeners } from 'node:events';
+import { mkdtemp, cp, readFile, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { browserFixture } from './dom-fixture.js';
 import { demonstrations } from '../public/js/registry.js';
 import { createQuiz } from '../public/js/core/quiz.js';
@@ -165,7 +169,7 @@ test('quiz mathematics uses inline MathML in Hebrew answers and feedback', () =>
     const math = () => nodes().filter(node => node.tagName === 'math');
     const action = () => nodes().find(node => node.tagName === 'button' && hasClass('primary')(node));
     const choose = index => nodes().filter(node => node.type === 'radio')[index].dispatchEvent(new Event('change'));
-    assert.deepEqual(math().map(node => node.getAttribute('aria-label')), ['mg cos θ', 'mg', 'mg sin θ']);
+    assert.deepEqual(math().map(node => node.getAttribute('aria-label')), [String.raw`mg \cos \theta`, 'mg', String.raw`mg \sin \theta`]);
     assert.ok(nodes().some(node => node.tagName === 'mi' && node.textContent === 'sin'));
     choose(0);
     assert.equal(nodes().filter(hasClass('is-selected')).length, 1);
@@ -187,4 +191,105 @@ test('quiz mathematics uses inline MathML in Hebrew answers and feedback', () =>
     assert.ok(nodes().some(node => node.tagName === 'msub'));
     assert.doesNotMatch(quiz.root.textContent, /\$/);
   } finally { controller.abort(); fixture.cleanup(); }
+});
+
+
+for (const [system, questionIndex, structures] of [
+  ['rotating-tube', 2, ['msub', 'msqrt', 'mfrac', 'msup']],
+  ['two-string', 0, ['msqrt', 'mfrac', 'msup']],
+  ['energy-bowl', 3, ['msup', 'mfrac']],
+  ['double-spring', 2, ['msqrt', 'mfrac']],
+  ['carousel', 2, ['msqrt', 'msup']],
+]) {
+  for (const language of ['en', 'he']) {
+    test(`${system}: question ${questionIndex + 1} renders typeset equations in ${language}`, () => {
+      const fixture = browserFixture(), controller = new AbortController();
+      try {
+        const quiz = createQuiz({ system, lang: language, signal: controller.signal }); fixture.root.append(quiz.root);
+        const nodes = () => descendants(quiz.root);
+        const action = () => nodes().find(node => node.tagName === 'button' && hasClass('primary')(node));
+        for (let index = 0; index <= questionIndex; index++) {
+          const choices = nodes().filter(node => node.type === 'radio');
+          choices[quizzes[system][index].correct].dispatchEvent(new Event('change'));
+          action().dispatchEvent(new Event('click'));
+          if (index < questionIndex) action().dispatchEvent(new Event('click'));
+        }
+        for (const tag of structures) assert.ok(nodes().some(node => node.tagName === tag), `missing ${tag}`);
+        for (const math of nodes().filter(node => node.tagName === 'math')) {
+          assert.equal(math.getAttribute('dir'), 'ltr'); assert.equal(math.getAttribute('display'), 'inline');
+          assert.doesNotMatch(math.textContent, /[\\$]/, 'LaTeX commands must not leak into visible text');
+        }
+        const outsideMath = node => node.tagName === 'math' ? '' : node.children.length ? node.children.map(outsideMath).join('') : node.textContent;
+        assert.doesNotMatch(outsideMath(quiz.root), /[=√²ₛωαθℓπ$\\]/, 'equations must not remain in prose');
+      } finally { controller.abort(); fixture.cleanup(); }
+    });
+  }
+}
+
+test('quiz data marks mathematical expressions in prompts, options and explanations in both languages', () => {
+  for (const [system, questions] of Object.entries(quizzes)) for (const question of questions) for (const language of ['en', 'he']) {
+    for (const text of [question.prompt[language], ...question.options[language], question.explanation[language]]) {
+      assert.equal((text.match(/\$/g) || []).length % 2, 0, `${system}: unmatched math delimiter`);
+      assert.doesNotMatch(text.replace(/\$[^$]+\$/g, ''), /[=√²ₛωαθℓπ]/, `${system}: unformatted mathematics`);
+    }
+  }
+});
+
+test('tube quiz keeps its question and score if feedback rendering fails, then recovers on retry', () => {
+  const fixture = browserFixture(), controller = new AbortController(), clicks = new WeakMap();
+  const question = quizzes['rotating-tube'][0], originalExplanation = question.explanation.en;
+  const createElement = fixture.document.createElement;
+  fixture.document.createElement = tag => {
+    const node = createElement(tag), listen = node.addEventListener.bind(node);
+    node.addEventListener = (type, callback, options) => {
+      if (tag === 'button' && type === 'click') clicks.set(node, callback);
+      listen(type, callback, options);
+    };
+    return node;
+  };
+  try {
+    const quiz = createQuiz({ system: 'rotating-tube', lang: 'en', signal: controller.signal }); fixture.root.append(quiz.root);
+    const body = fixture.find(hasClass('quiz-body'));
+    const action = () => descendants(body).find(node => node.tagName === 'button');
+    const choose = index => descendants(body).filter(node => node.type === 'radio')[index].dispatchEvent(new Event('change'));
+    choose(question.correct);
+    const children = [...body.children], submit = clicks.get(action());
+    question.explanation.en = String.raw`Unsupported feedback $\unsupported{omega}$`;
+    assert.throws(() => submit(), /Unsupported authored LaTeX command/);
+    assert.equal(body.children.length, children.length, 'the current question must remain visible');
+    children.forEach((node, index) => assert.equal(body.children[index], node));
+    assert.equal(hasClass('is-checked')(body), false);
+    question.explanation.en = originalExplanation;
+    submit();
+    assert.match(readableText(body), /Correct\./);
+    assert.ok(descendants(body).some(node => node.tagName === 'mi' && node.textContent === 'ω'));
+    action().dispatchEvent(new Event('click'));
+    for (const remaining of quizzes['rotating-tube'].slice(1)) {
+      choose(remaining.correct); action().dispatchEvent(new Event('click')); action().dispatchEvent(new Event('click'));
+    }
+    assert.match(body.textContent, /4 of 4 correctly/, 'a failed render must not count the answer twice');
+  } finally { question.explanation.en = originalExplanation; controller.abort(); fixture.cleanup(); }
+});
+
+
+test('tube quiz loads the new math renderer even when an older renderer is already cached', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'quiz-math-cache-'));
+  const fixture = browserFixture(), controller = new AbortController();
+  try {
+    await cp(new URL('../public/js/', import.meta.url), directory, { recursive: true });
+    await writeFile(join(directory, 'package.json'), '{"type":"module"}');
+    const rendererPath = join(directory, 'core/latex.js'), currentSource = await readFile(rendererPath, 'utf8');
+    await writeFile(rendererPath, currentSource.replace("omega: 'ω', pi: 'π', ell: 'ℓ', ", ''));
+    const older = await import(pathToFileURL(rendererPath).href);
+    assert.throws(() => older.latexExpression(String.raw`m\omega^2r`), /Unsupported authored LaTeX command: omega/);
+    await writeFile(rendererPath, currentSource);
+    const fresh = await import(pathToFileURL(join(directory, 'core/quiz.js')).href);
+    const quiz = fresh.createQuiz({ system: 'rotating-tube', lang: 'en', signal: controller.signal }); fixture.root.append(quiz.root);
+    const body = fixture.find(hasClass('quiz-body'));
+    const radio = descendants(body).find(node => node.type === 'radio'); radio.dispatchEvent(new Event('change'));
+    descendants(body).find(node => node.tagName === 'button').dispatchEvent(new Event('click'));
+    assert.equal(body.children.length, 4);
+    assert.match(readableText(body), /Correct\./);
+    assert.ok(descendants(body).some(node => node.tagName === 'mi' && node.textContent === 'ω'));
+  } finally { controller.abort(); fixture.cleanup(); await rm(directory, { recursive: true, force: true }); }
 });

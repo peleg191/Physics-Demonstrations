@@ -395,3 +395,16 @@ main,.site-footer{max-width:1680px;margin-inline:auto;width:calc(100% - clamp(48
 .slip-playback{margin-block:10px 18px}.slip-playback[hidden]{display:none}
 
 .friction-bonus{margin-block:20px}.friction-bonus[open]>summary{margin-bottom:22px}.friction-bonus .playback[hidden]{display:none}
+
+.energy-panel{margin-top:20px;padding:20px;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);--energy-potential:#c38e60;--energy-kinetic:#61816b;--energy-potential-ink:#8e5c36;--energy-kinetic-ink:#3c5e49}
+.energy-panel h3{margin:0 0 14px;font-size:17px}.energy-bar{display:flex;width:100%;height:30px;overflow:hidden;border-radius:5px;background:var(--line);direction:ltr}.energy-segment{height:100%;min-width:0}.energy-potential{background:var(--energy-potential)}.energy-kinetic{background:var(--energy-kinetic)}
+.energy-legend{display:flex;flex-wrap:wrap;gap:12px 24px;margin-top:14px;font-size:13px}.energy-reading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.energy-reading b{font-variant-numeric:tabular-nums}.energy-potential-reading:before,.energy-kinetic-reading:before{content:"";display:inline-block;width:12px;height:12px;border-radius:2px;flex:none}.energy-potential-reading:before{background:var(--energy-potential)}.energy-kinetic-reading:before{background:var(--energy-kinetic)}.energy-panel .panel-note{margin-bottom:0}.circular-status{fill:#9a451b;font-size:16px}
+[data-theme=dark] .energy-panel{--energy-potential:#d3a374;--energy-kinetic:#9fb79a;--energy-potential-ink:#d3a374;--energy-kinetic-ink:#9fb79a}
+@media(max-width:600px){.energy-panel{padding:16px}.energy-legend{gap:10px 16px}}
+
+.stage > .energy-panel{margin:0 18px 12px;padding:14px;order:0}.stage > .energy-panel .panel-note{font-size:11px;margin-top:10px}.system-svg .bowl-force-axes text{font-size:15px;font-style:italic;fill:#526452}
+
+.energy-identity{display:flex;justify-content:center;margin-bottom:12px;direction:ltr}.energy-identity math{font-family:"Playground Math",math;font-size:23px}.energy-legend{justify-content:space-between}.energy-reading math{font-family:"Playground Math",math;font-size:18px}.energy-kinetic-symbol{color:var(--energy-kinetic-ink)}.energy-potential-symbol{color:var(--energy-potential-ink)}
+
+.energy-legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 12px;direction:ltr}.energy-reading{min-width:0;justify-content:center;flex-wrap:nowrap;white-space:nowrap}.energy-reading:before{display:none}.energy-reading math{white-space:nowrap}
+@media(max-width:600px){.energy-reading math{font-size:clamp(11px,3vw,16px)}}

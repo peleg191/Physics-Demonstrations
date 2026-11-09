@@ -1,5 +1,6 @@
-import { latexExpression } from './latex.js';
-import { renderMath, row, identifier, subscript, trig } from './math.js';
+// Version this dependency when the quiz starts using newly supported LaTeX commands.
+import { latexExpression } from './latex.js?quiz-math=2';
+import { renderMath } from './math.js';
 import { element, button, svgElement } from './dom.js';
 import { quizzes } from './quiz-data.js';
 import { awardQuizBadge } from './quiz-badges.js';
@@ -24,22 +25,10 @@ const copy = {
 // Authored $...$ spans use semantic MathML; surrounding prose keeps the UI font.
 function quizText(tag, className, text) {
   const node = element(tag, className);
-  const staticCoefficient = () => subscript(identifier('μ'), ['mi', { mathvariant: 'normal' }, 's']);
-  const formulas = {
-    'mg': row(identifier('m'), identifier('g')),
-    'g': identifier('g'),
-    'θ': identifier('θ'),
-    'mg cos θ': row(identifier('m'), identifier('g'), trig('cos', identifier('θ'))),
-    'mg sin θ': row(identifier('m'), identifier('g'), trig('sin', identifier('θ'))),
-    'μₛN': row(staticCoefficient(), identifier('N')),
-    'tan θ = μₛ': row(trig('tan', identifier('θ')), ['mo', '='], staticCoefficient()),
-    'F = −kx': row(identifier('F'), ['mo', '='], ['mo', '−'], identifier('k'), identifier('x')),
-    'x = 0': row(identifier('x'), ['mo', '='], ['mn', '0']),
-  };
   let position = 0;
   for (const match of text.matchAll(/\$([^$]+)\$/g)) {
     if (match.index > position) node.append(element('span', '', text.slice(position, match.index)));
-    const math = renderMath({ text: match[1], label: match[1], expression: formulas[match[1]] || (/[\\_^]/.test(match[1]) ? latexExpression(match[1]) : undefined) });
+    const math = renderMath({ text: match[1], label: match[1], expression: latexExpression(match[1]) });
     math.setAttribute('display', 'inline'); math.setAttribute('class', 'quiz-math'); node.append(math);
     position = match.index + match[0].length;
   }
@@ -108,20 +97,24 @@ export function createQuiz({ system, lang, signal }) {
     if (!window.hidden && window.style.left) { const bounds = window.getBoundingClientRect(); move(bounds.left, bounds.top); }
   }
   globalThis.addEventListener?.('resize', syncLayout, { signal });
+  function commitBody(nodes) {
+    // Construct all feedback and choices before replacing the visible question.
+    body.replaceChildren(...nodes);
+    body.classList.toggle('is-checked', checked && index < questions.length);
+    body.classList.toggle('is-result', index === questions.length);
+  }
   function render(moveFocus = false) {
     const t = copy[language]; launcherLabel.textContent = t.title; title.textContent = t.title;
     syncLayout(); close.setAttribute('aria-label', t.close);
-    body.replaceChildren();
-    body.classList.toggle('is-checked', checked && index < questions.length);
-    body.classList.toggle('is-result', index === questions.length);
     if (index === questions.length) {
       const result = element('h3', 'quiz-result', t.result(score, questions.length));
       result.setAttribute('tabindex', '-1');
       const retry = button(t.retry, 'button secondary');
       retry.addEventListener('click', () => { index = 0; selected = null; checked = false; score = 0; render(true); }, { signal });
       const scoreBadge = element('div', 'quiz-result-score', `${score}/${questions.length}`); scoreBadge.setAttribute('aria-hidden', 'true');
-      body.append(scoreBadge, result, element('p', 'quiz-intro', t.done), retry);
-      if (score === questions.length) body.insertBefore(element('p', 'quiz-earned', t.earned), retry);
+      const content = [scoreBadge, result, element('p', 'quiz-intro', t.done)];
+      if (score === questions.length) content.push(element('p', 'quiz-earned', t.earned));
+      content.push(retry); commitBody(content);
       if (moveFocus) { body.scrollTop = 0; result.focus({ preventScroll: true }); }
       return;
     }
@@ -163,16 +156,26 @@ export function createQuiz({ system, lang, signal }) {
     });
     action.addEventListener('click', () => {
       if (selected === null) return;
-      if (checked) { index++; selected = null; checked = false; render(true); }
-      else {
-        checked = true; if (selected === question.correct) score++;
-        if (index === questions.length - 1 && score === questions.length) awardQuizBadge(system);
-        render(); body.children[body.children.length - 2].focus({ preventScroll: true });
+      const previous = { index, selected, checked, score };
+      try {
+        if (checked) { index++; selected = null; checked = false; render(true); }
+        else {
+          checked = true; if (selected === question.correct) score++;
+          render();
+          if (index === questions.length - 1 && score === questions.length) awardQuizBadge(system);
+          body.children[body.children.length - 2].focus({ preventScroll: true });
+        }
+      } catch (error) {
+        ({ index, selected, checked, score } = previous);
+        throw error;
       }
     }, { signal });
-    body.append(progress, fieldset, feedback, action);
+    commitBody([progress, fieldset, feedback, action]);
     if (moveFocus) { body.scrollTop = 0; progress.focus({ preventScroll: true }); }
   }
   render();
-  return { root, setLanguage(next) { language = next; render(); } };
+  return { root, setLanguage(next) {
+    const previous = language; language = next;
+    try { render(); } catch (error) { language = previous; throw error; }
+  } };
 }

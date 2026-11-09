@@ -5,7 +5,7 @@ import { element } from './dom.js';
 // No external renderer, fonts, or network requests are needed.
 export function latexExpression(source) {
   let position = 0;
-  const symbols = { alpha: 'α', theta: 'θ', mu: 'μ', Sigma: 'Σ', sum: '∑', leq: '≤', geq: '≥',
+  const symbols = { alpha: 'α', theta: 'θ', mu: 'μ', omega: 'ω', pi: 'π', ell: 'ℓ', Sigma: 'Σ', sum: '∑', leq: '≤', geq: '≥',
     approx: '≈', cdot: '·', times: '×', pm: '±', mp: '∓', to: '→', circ: '°', infty: '∞', lvert: '|', rvert: '|', searrow: '↘', uparrow: '↑' };
   const space = () => { while (/\s/.test(source[position] || '') && position < source.length) position++; };
   function group() {
@@ -35,7 +35,7 @@ export function latexExpression(source) {
       if (['quad', 'qquad'].includes(command)) return ['mspace', { width: command === 'quad' ? '1em' : '2em' }];
       if ([',', ';', '!', ' '].includes(command)) return ['mspace', { width: command === '!' ? '0em' : '0.2em' }];
       if (!symbols[command]) throw new Error(`Unsupported authored LaTeX command: ${command}`);
-      return [['alpha', 'theta', 'mu'].includes(command) ? 'mi' : 'mo', symbols[command]];
+      return [['alpha', 'theta', 'mu', 'omega', 'pi', 'ell'].includes(command) ? 'mi' : 'mo', symbols[command]];
     }
     if (/[0-9.]/.test(char)) {
       let value = char;

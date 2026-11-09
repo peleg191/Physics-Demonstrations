@@ -22,12 +22,12 @@ for (const entry of demonstrations) {
       toggle.checked = true; toggle.dispatchEvent(new Event('change'));
       assert.equal(root.hidden, false);
       assert.match(stage.className, /has-graphs/);
-      const multiSeries = ['basketball', 'friction-stacked'].includes(entry.id);
+      const multiSeries = ['basketball', 'friction-stacked', 'carousel'].includes(entry.id);
       const legends = descendants(root, hasClass('graph-legend'));
       assert.equal(legends.length, multiSeries ? 1 : 0);
       for (const legend of legends) {
-        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Upper block · solid/ : /Horizontal motion \(x\) · solid/);
-        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Lower block · dashed/ : /Vertical motion \(y\) · dashed/);
+        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Upper block · solid/ : entry.id === 'carousel' ? /Horizontal plane · x/ : /Horizontal motion \(x\) · solid/);
+        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Lower block · dashed/ : entry.id === 'carousel' ? /Horizontal plane · y/ : /Vertical motion \(y\) · dashed/);
       }
       const charts = descendants(root, node => node.tagName === 'svg');
       assert.equal(charts.length, 3);

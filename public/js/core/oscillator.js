@@ -11,6 +11,7 @@ import { translator, format } from './i18n.js';
 
 // Shared playback and selection; each oscillator supplies its own physical model.
 export function mountOscillator({ root, lang, kind, strings, defaultParameters, oscillatorState, duration, specs }) {
+  const dual = kind === 'double-spring';
   const pendulum = kind === 'pendulum', gravity = physicsConfig.gravity;
   let params = { ...defaultParameters }, words = strings[lang], selected = false, paused = false, scene;
   const controls = new Map();
@@ -39,6 +40,8 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   function buildScene() {
     const svg = api.svg;
     s('path', { d: pendulum ? 'M 300 80 H 500 M 400 80 V 100' : 'M 115 180 V 350 H 700', stroke: '#839775', 'stroke-width': 4, fill: 'none' }, svg);
+    if (dual) s('path', { d: 'M 685 180 V 350', stroke: '#839775', 'stroke-width': 4 }, svg);
+    const secondConnector = dual ? s('path', { fill: 'none', stroke: '#6f8e65', 'stroke-width': 3 }, svg) : null;
     const reference = s('line', { x1: 400, x2: 400, y1: pendulum ? 100 : 230, y2: pendulum ? 410 : 375, stroke: '#9caa91', 'stroke-dasharray': '5 6' }, svg);
     const connector = s('path', { fill: 'none', stroke: pendulum ? '#ad8959' : '#6f8e65', 'stroke-width': 3 }, svg);
     const body = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': `${kind}-analysis`, 'aria-describedby': hint.id }, svg);
@@ -51,7 +54,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle', class: 'force-label' });
     const geometry = geometryLayer(svg);
     prepareSketchOutlines(api.svg);
-    scene = { body, reference, connector, forces, force, label, geometry };
+    scene = { body, reference, connector, secondConnector, forces, force, label, geometry };
   }
   function render(time, { updateReadouts = true } = {}) {
     if (!scene) return;
@@ -92,6 +95,11 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
       const end = x - 30, points = ['M 115 320 L 135 320'];
       for (let n = 0; n <= 20; n++) points.push(`L ${135 + (end - 155) * n / 20} ${n === 0 || n === 20 ? 320 : 320 + (n % 2 ? -12 : 12)}`);
       points.push(`L ${end} 320`); scene.connector.setAttribute('d', points.join(' '));
+      if (dual) {
+        const start = x + 30, points = [`M ${start} 320`];
+        for (let n = 0; n <= 20; n++) points.push(`L ${start + 20 + (645 - start) * n / 20} ${n === 0 || n === 20 ? 320 : 320 + (n % 2 ? -12 : 12)}`);
+        points.push('L 685 320'); scene.secondConnector.setAttribute('d', points.join(' '));
+      }
       dx = -state.position / params.amplitude * 85; dy = 0;
     }
     scene.body.setAttribute('transform', `translate(${x} ${y})`);
