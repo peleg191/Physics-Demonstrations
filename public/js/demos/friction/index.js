@@ -176,7 +176,60 @@ export function mountSystem(kind, { root, lang }) {
     if (direction) direction.value = String(params.direction);
     reset();
   }
+  let graphSceneKey = '', graphSceneObstacles = [];
+  function updateGraphScene() {
+    const key = JSON.stringify([params, selected]);
+    if (key !== graphSceneKey) {
+      graphSceneKey = key;
+      const end = endTime(kind, params, g);
+      const initial = sceneGeometry(kind, params);
+      graphSceneObstacles = kind === 'stacked' ? [
+        { left: 40, top: 300, width: 565, height: 24 },
+        { left: 40, top: 150, width: 140, height: 75 },
+        { left: 470, top: 320, width: 140, height: 40 },
+      ] : [
+        { left: initial.wheel.x - 30, top: initial.wheel.y - 30, width: 60, height: 60 },
+        { left: kind === 'table' ? 40 : 480, top: kind === 'table' ? 150 : initial.foot.y + 10, width: 140, height: 50 },
+        { left: initial.angleLabel.x - 70, top: initial.angleLabel.y - 25, width: 140, height: 50 },
+        ...(kind === 'table' ? [{ left: 40, top: 135, width: 280, height: 24 }] : []),
+        ...Array.from({ length: 10 }, (_, index) => ({
+          left: 300 + (initial.foot.x - 310) * index / 10,
+          top: 135 + (initial.foot.y - 145) * index / 10,
+          width: (initial.foot.x - 310) / 10 + 20,
+          height: (initial.foot.y - 145) / 10 + 20,
+        })),
+      ];
+      // Reserve the swept bodies and ropes, rather than only their release positions.
+      const sweptBodies = [[], []], sweptRopes = [[], []];
+      for (let index = 0; index <= 12; index++) {
+        const state = sample(kind, params, end * index / 12, g);
+        const scene = sceneGeometry(kind, params, state.position, state.topPosition);
+        scene.bodies.forEach((body, index) => sweptBodies[index].push({ x: body.x, y: body.y }));
+        if (kind !== 'stacked') {
+          sweptRopes[0].push(scene.start, scene.entry);
+          sweptRopes[1].push(scene.exit, scene.end);
+        }
+      }
+      for (const [groups, paddingX, paddingY] of [[sweptBodies, 48, 45], [sweptRopes, 4, 4]]) {
+        for (const points of groups) {
+          if (!points.length) continue;
+          const xs = points.map(point => point.x), ys = points.map(point => point.y);
+          graphSceneObstacles.push({ left: Math.min(...xs) - paddingX, top: Math.min(...ys) - paddingY,
+            width: Math.max(...xs) - Math.min(...xs) + 2 * paddingX,
+            height: Math.max(...ys) - Math.min(...ys) + 2 * paddingY });
+        }
+      }
+      if (selected !== null) {
+        const body = sceneGeometry(kind, params).bodies[selected];
+        graphSceneObstacles.push(kind === 'stacked' && selected === 1
+          ? { left: 280, top: 30, width: 310, height: 290 }
+          : { left: body.x - 125, top: body.y - 125, width: 250, height: 250 });
+      }
+    }
+    api.setGraphObstacles(graphSceneObstacles);
+  }
   function render(time, { updateReadouts = true } = {}) {
+    updateGraphScene();
     const state = sample(kind, params, time, g), geometry = sceneGeometry(kind, params, state.position, state.topPosition);
     ground.setAttribute('d', geometry.ground);
     roughness.setAttribute('d', roughSurfacePath(kind, geometry));

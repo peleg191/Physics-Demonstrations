@@ -2,7 +2,7 @@ export const strings = {
   en: {
     mass: 'Mass', stiffness: 'Spring constant', amplitude: 'Initial displacement', position: 'Displacement', velocity: 'Velocity', period: 'Period',
     caption: 'HORIZONTAL MASS–SPRING OSCILLATOR', title: 'Mass–spring equations', close: 'Close analysis', block: 'Mass: show equations',
-    hint: 'Select the mass to inspect its restoring force and equations. Use Enter or Space with the keyboard.',
+    hint: 'Drag and release to set the initial displacement. Select the mass to inspect its restoring force and equations. Use Enter or Space with the keyboard.',
     about: 'A mass attached to an ideal massless spring on a frictionless horizontal surface. Released from rest at x = A. No damping, driving, or collisions. The dashed line marks equilibrium, where the spring is at its natural length. Weight and the normal force balance vertically.',
     axis: 'x is measured from equilibrium, positive to the right. At release x(0) = A and v(0) = 0. The arrow shows the horizontal spring force.',
     paused: 'Playback paused to inspect the mass. Press Play to continue.',
@@ -17,7 +17,7 @@ export const strings = {
   he: {
     mass: 'מסה', stiffness: 'קבוע הקפיץ', amplitude: 'העתק התחלתי', position: 'העתק', velocity: 'מהירות', period: 'זמן מחזור',
     caption: 'מתנד מסה–קפיץ אופקי', title: 'משוואות המסה והקפיץ', close: 'סגירת הניתוח', block: 'מסה: הצגת משוואות',
-    hint: 'בחרו במסה להצגת הכוח המחזיר והמשוואות. במקלדת אפשר להשתמש ב־Enter או ברווח.',
+    hint: 'גררו ושחררו לשינוי ההעתק ההתחלתי. בחרו במסה להצגת הכוח המחזיר והמשוואות. במקלדת אפשר להשתמש ב־Enter או ברווח.',
     about: 'מסה מחוברת לקפיץ אידאלי חסר מסה על משטח אופקי ללא חיכוך. משוחררת ממנוחה ב־x = A. ללא ריסון, כוח מניע או התנגשויות. הקו המקווקו מסמן את שיווי המשקל, שבו הקפיץ באורכו הטבעי. המשקל והנורמל מאזנים זה את זה אנכית.',
     axis: 'ההעתק x נמדד משיווי המשקל וחיובי ימינה. ברגע השחרור x(0) = A והמהירות אפס. החץ מציג את הכוח האופקי של הקפיץ.',
     paused: 'התנועה הושהתה לבחינת המסה. לחצו על הפעלה להמשך.',

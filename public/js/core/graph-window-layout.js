@@ -15,6 +15,30 @@ export function chooseGraphWindow({ width, height, obstacles = [], count = 1 }) 
   const widths = unique([320, 380, count * 250 + 24, ...obstacles.flatMap(o => [o.left - 2 * gap, width - o.left - o.width - 2 * gap])].map(value => Math.min(value, availableWidth)));
   const clearHeights = obstacles.flatMap(o => [o.top - 2 * gap, height - o.top - o.height - 2 * gap]);
   let best, bestScore = -Infinity;
+  // Search internal gaps too: two views can leave useful space between them.
+  const edges = unique([gap, width - gap, ...obstacles.flatMap(o => [o.left - gap, o.left + o.width + gap])]
+    .map(x => Math.max(gap, Math.min(x, width - gap)))).sort((a, b) => a - b);
+  for (let leftIndex = 0; leftIndex < edges.length; leftIndex++) {
+    for (let rightIndex = leftIndex + 1; rightIndex < edges.length; rightIndex++) {
+      const left = edges[leftIndex], w = edges[rightIndex] - left;
+      if (w < Math.min(220, availableWidth)) continue;
+      const blocked = obstacles.filter(o => o.left < left + w && o.left + o.width > left)
+        .map(o => [Math.max(gap, o.top - gap), Math.min(height - gap, o.top + o.height + gap)])
+        .filter(([start, end]) => end > start).sort((a, b) => a[0] - b[0]);
+      let top = gap;
+      for (const [start, end] of [...blocked, [height - gap, height - gap]]) {
+        const h = start - top;
+        if (h >= Math.min(180, availableHeight)) {
+          const horizontal = graphsSideBySide(w, count);
+          const plotWidth = (w - 24) / (horizontal ? count : 1);
+          const plotHeight = Math.max(1, (h - 104) / (horizontal ? 1 : count));
+          const score = Math.min(plotWidth, plotHeight * 480 / 230) - w * h / (width * height) * 30;
+          if (score > bestScore) { bestScore = score; best = { left, top, width: w, height: h }; }
+        }
+        top = Math.max(top, end);
+      }
+    }
+  }
   for (const requestedWidth of widths) {
     if (requestedWidth < Math.min(220, availableWidth)) continue;
     const w = Math.min(requestedWidth, availableWidth);

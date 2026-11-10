@@ -185,7 +185,7 @@ main,.site-footer{max-width:1680px;margin-inline:auto;width:calc(100% - clamp(48
 .stage-column > .playback{justify-content:flex-end;margin:10px 0;min-height:44px}
 @media(max-width:600px), (max-width:1000px) and (max-height:600px) and (orientation:landscape){
   .quiz-window{top:auto;bottom:8px;inset-inline-end:8px;max-height:55dvh}
-  .stage .transport{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:max-content}
+  .stage .transport{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;width:max-content;max-width:calc(100% - 20px)}
   .stage .transport .button{padding:8px;font-size:12px;gap:5px}
   .experiment-layout{grid-template-columns:minmax(0,1fr)}
   .parameters,.advanced-fields{grid-template-columns:minmax(0,1fr)}
@@ -279,7 +279,7 @@ main,.site-footer{max-width:1680px;margin-inline:auto;width:calc(100% - clamp(48
 .graph-tab[aria-pressed=true]{background:var(--green);color:var(--paper);border-color:var(--green)}
 .graph-tab[aria-pressed=true] .graph-tab-indicator{background:var(--paper);border-color:var(--paper);color:var(--green)}
 .stage:not(.graphs-beside) .graph-grid{display:flex;flex-direction:column;gap:4px;flex:1;min-height:0;padding:0 6px 16px}
-.stage:not(.graphs-beside) .graph-card{flex:1;min-width:0;min-height:0;padding:2px;border:0;background:transparent}
+.stage:not(.graphs-beside) .graph-card{flex:1;min-width:0;min-height:0;padding:0;border:0;background:transparent}
 .stage:not(.graphs-beside) .graph-card[hidden]{display:none}
 
 
@@ -408,3 +408,8 @@ main,.site-footer{max-width:1680px;margin-inline:auto;width:calc(100% - clamp(48
 
 .energy-legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 12px;direction:ltr}.energy-reading{min-width:0;justify-content:center;flex-wrap:nowrap;white-space:nowrap}.energy-reading:before{display:none}.energy-reading math{white-space:nowrap}
 @media(max-width:600px){.energy-reading math{font-size:clamp(11px,3vw,16px)}}
+
+/* Keep scene labels and embedded graphs from selecting text during interaction. */
+.stage,.stage *{-webkit-user-select:none;user-select:none}
+
+.graph-card[role="slider"]:focus-visible{outline:3px solid #b5783e;outline-offset:-3px;border-radius:6px}

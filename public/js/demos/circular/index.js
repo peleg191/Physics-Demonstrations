@@ -151,6 +151,24 @@ export function mountCircularSystem(kind, { root, lang }) {
   function render(time, { updateReadouts = true } = {}) {
     if (!ready) return;
     const state = model(params, time, gravity), c = Math.cos(state.phase || 0), sn = Math.sin(state.phase || 0);
+    // Protect the full motion envelope so opening graphs mid-cycle is stable.
+    api.setGraphObstacles(bowl ? [
+      { left: 155, top: 110, width: 495, height: 290 },
+      { left: 475, top: 390, width: 160, height: 35 },
+      ...(selected || resolved ? [{ left: 100, top: 130, width: 600, height: 310 }] : []),
+    ] : tube ? [
+      { left: 75, top: 55, width: 390, height: 390 },
+      { left: 465, top: 215, width: 330, height: 70 },
+      { left: 600, top: 120, width: 40, height: 270 },
+      { left: 540, top: 65, width: 160, height: 30 },
+      ...(selected ? [{ left: 465, top: 145, width: 330, height: 215 }] : []),
+      ...(!state.valid ? [{ left: 100, top: 424, width: 600, height: 56 }] : []),
+    ] : [
+      { left: 95, top: 60, width: 385, height: 365 },
+      { left: 510, top: 135, width: 230, height: 230 },
+      { left: 545, top: 60, width: 160, height: 30 },
+      ...(!state.valid ? [{ left: 320, top: 435, width: 160, height: 30 }] : []),
+    ]);
     let x, y, sideScale;
     for (const item of arrows) { item.path.setAttribute('display', 'none'); item.label.setAttribute('display', 'none'); }
     forceLayer.setAttribute('display', selected || resolved ? 'inline' : 'none');

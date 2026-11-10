@@ -57,3 +57,53 @@ test('period responds to pendulum length and spring stiffness', () => {
   near(pendulum.oscillatorState({ ...p, length: p.length * 4 }, 0, 10).period, pendulum.oscillatorState(p, 0, 10).period * 2);
   near(spring.oscillatorState({ ...s, stiffness: s.stiffness * 4 }, 0).period, spring.oscillatorState(s, 0).period / 2);
 });
+
+for (const name of ['spring', 'double-spring', 'pendulum']) {
+  test(`${name}: drag releases from rest, clamps displacement, and preserves click selection`, async () => {
+    const fixture = browserFixture(); let demo;
+    try {
+      demo = (await demonstrations.find(entry => entry.id === name).load()).mount({ root: fixture.root, lang: 'en' });
+      const svg = fixture.find(n => n.tagName === 'svg');
+      const body = fixture.find(n => n.getAttribute('class') === 'selectable-mass');
+      const input = fixture.find(n => n.id === `${name}-amplitude`);
+      const panel = fixture.find(n => n.id === `${name}-analysis`);
+      let capture = null;
+      svg.getScreenCTM = () => ({ inverse: () => ({}) });
+      svg.createSVGPoint = () => ({ x: 0, y: 0, matrixTransform() { return { x: this.x, y: this.y }; } });
+      svg.setPointerCapture = id => { capture = id; };
+      svg.hasPointerCapture = id => capture === id;
+      svg.releasePointerCapture = () => { capture = null; };
+      function pointer(type, x, y, id = 1) {
+        const event = new Event(type, { cancelable: true });
+        Object.defineProperties(event, { target: { value: body }, button: { value: 0 }, pointerId: { value: id }, clientX: { value: x }, clientY: { value: y } });
+        svg.dispatchEvent(event);
+      }
+      const [x, y] = body.getAttribute('transform').match(/-?\d+(?:\.\d+)?/g).map(Number);
+      pointer('pointerdown', x, y);
+      pointer('pointermove', -1000, y, 2); // A different pointer cannot move the mass.
+      assert.equal(Number(input.value), name === 'pendulum' ? 10 : 0.6);
+      pointer('pointermove', -1000, y);
+      assert.equal(Number(input.value), name === 'pendulum' ? -15 : -1);
+      assert.equal(fixture.frames.size, 0);
+      pointer('pointerup', -1000, y);
+      assert.equal(capture, null);
+      assert.equal(fixture.frames.size, 1);
+      const click = (target = body) => { const event = new Event('click'); Object.defineProperty(event, 'target', { value: target }); svg.dispatchEvent(event); };
+      click(svg); assert.equal(fixture.frames.size, 1);
+      assert.equal(panel.hidden, true); // Release must not open the equations.
+      const releasedPosition = body.getAttribute('transform');
+      fixture.frame(0); fixture.frame(100);
+      assert.notEqual(body.getAttribute('transform'), releasedPosition);
+      assert.doesNotMatch(body.getAttribute('transform'), /NaN/);
+      click(); assert.equal(panel.hidden, false);
+      pointer('pointerdown', 400, 320);
+      pointer('pointermove', 1400, 320);
+      pointer('pointercancel', 1400, 320);
+      assert.equal(Number(input.value), name === 'pendulum' ? -15 : -1);
+      input.value = '0'; input.dispatchEvent(new Event('change'));
+      assert.doesNotMatch(svg.textContent, /NaN/);
+      const force = fixture.find(n => n.tagName === 'path' && n.getAttribute('stroke') === '#9a451b');
+      assert.doesNotMatch(force.getAttribute('d'), /NaN|Infinity/);
+    } finally { demo?.dispose(); fixture.cleanup(); }
+  });
+}

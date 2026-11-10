@@ -21,7 +21,7 @@ function labelTransport(control, label, icon) {
   control.replaceChildren(svg, element('span', '', label));
 }
 // Shared shell; only a demo knows its physical model, drawing and duration.
-export function createExperiment({ root, lang, system, duration, render, reset, defaults, motion, viewBox = '0 0 800 480', mobileViewBox = viewBox }) {
+export function createExperiment({ root, lang, system, duration, render, reset, defaults, motion, ignoreSceneClick = () => false, viewBox = '0 0 800 480', mobileViewBox = viewBox }) {
   const controller = new AbortController(); const { signal } = controller;
   let currentLang = lang, t = translator(lang), statusKey = 'ready';
   const layout = element('div', 'experiment-layout');
@@ -88,7 +88,7 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
     play.setAttribute('aria-pressed', String(playing));
     step.disabled = clock.ended;
     render(time, { updateReadouts });
-    graphs?.update(time, time === 0 && !playing);
+    graphs?.update(time, time === 0 && !playing && !frame?.seeking);
   } });
   let sceneObstacles = [], obstacleSignature = '';
   function graphObstacles() {
@@ -102,13 +102,14 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
       }));
       return { left: points[0].x, top: points[0].y, width: points[1].x - points[0].x, height: points[1].y - points[0].y };
     });
-    for (const control of [transport, stageHead]) {
+    for (const control of [transport, stageHead, ...stage.children].filter((node, index, nodes) =>
+      nodes.indexOf(node) === index && (node === transport || node === stageHead || node.classList.contains('energy-panel')))) {
       const bounds = control.getBoundingClientRect();
       rectangles.push({ left: bounds.left - origin.left, top: bounds.top - origin.top, width: bounds.width, height: bounds.height });
     }
     return rectangles;
   }
-  const graphs = motion ? createMotionGraphs({ parent: stage, panel, signal, lang, duration, model: motion, time: () => clock.time, obstacles: graphObstacles }) : null;
+  const graphs = motion ? createMotionGraphs({ parent: stage, panel, transport, signal, lang, duration, model: motion, time: () => clock.time, seek: seconds => clock.seek(seconds), obstacles: graphObstacles }) : null;
   const api = { stageColumn, svg, parameters, metrics, feedback, accessible, modelText, liveMark, signal, clock,
     get lang() { return currentLang; },
     setPlaybackRate(value) {
@@ -143,6 +144,7 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
   const togglePlayback = () => clock.playing ? clock.pause() : clock.play();
   play.addEventListener('click', togglePlayback, { signal });
   svg.addEventListener('click', event => {
+    if (ignoreSceneClick(event)) return;
     // Selecting a body keeps its existing analysis interaction.
     for (let target = event.target; target && target !== svg; target = target.parentNode) {
       if (target.getAttribute?.('role') === 'button') return;

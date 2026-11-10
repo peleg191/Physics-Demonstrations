@@ -36,3 +36,13 @@ test('duration changes are respected on reset', () => {
   let duration = 2; const f = fixture(() => duration); f.clock.step(1); duration = .4; f.clock.reset(); f.clock.step(1);
   assert.equal(f.clock.time, .4); assert.equal(f.clock.ended, true);
 });
+
+test('seeking pauses, clamps time, resumes from the chosen instant, and respects disposal', () => {
+  const f = fixture(); f.clock.play(); f.clock.seek(1.2);
+  assert.equal(f.clock.time, 1.2); assert.equal(f.clock.playing, false); assert.equal(f.pending.size, 0);
+  f.clock.play(); f.frame(100); f.frame(600); assert.equal(f.clock.time, 1.7);
+  f.clock.seek(100); assert.equal(f.clock.time, 3); assert.equal(f.clock.ended, true);
+  f.clock.seek(-1); assert.equal(f.clock.time, 0);
+  const count = f.samples.length; f.clock.seek(NaN); assert.equal(f.samples.length, count);
+  f.clock.dispose(); f.clock.seek(2); assert.equal(f.clock.time, 0);
+});

@@ -15,7 +15,9 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   const pendulum = kind === 'pendulum', gravity = physicsConfig.gravity;
   let params = { ...defaultParameters }, words = strings[lang], selected = false, paused = false, scene;
   const controls = new Map();
-  const api = createExperiment({ root, lang, system: kind, motion: () => motionModel(time => { const state = oscillatorState(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; }, { angular: pendulum, note: pendulum ? 'graphAngularNote' : 'graphNote' }), duration: () => duration(params, gravity), render, reset, defaults });
+  let drag = null, suppressClick = false;
+  const amplitudeSpec = specs.find(spec => spec.key === 'amplitude');
+  const api = createExperiment({ root, lang, system: kind, ignoreSceneClick: () => suppressClick, motion: () => motionModel(time => { const state = oscillatorState(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; }, { angular: pendulum, note: pendulum ? 'graphAngularNote' : 'graphNote' }), duration: () => duration(params, gravity), render, reset, defaults });
   api.svg.setAttribute('role', 'group');
   const hint = element('p', 'analysis-hint'); hint.id = `${kind}-hint`; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: `${kind}-analysis`, onClose: close });
@@ -32,11 +34,61 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); scene.body.focus({ preventScroll: true }); }
   function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; render(api.clock.time); }
   function isBody(node) { for (; node && node !== api.svg; node = node.parentNode) if (node === scene.body) return true; return false; }
-  api.svg.addEventListener('click', event => { if (isBody(event.target)) select(); else if (selected) close(); }, { signal: api.signal });
+  api.svg.addEventListener('click', event => { if (suppressClick) { suppressClick = false; return; } if (isBody(event.target)) select(); else if (selected) close(); }, { signal: api.signal });
   api.svg.addEventListener('keydown', event => {
     if (isBody(event.target) && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); select(); }
   }, { signal: api.signal });
   root.addEventListener('keydown', event => { if (event.key === 'Escape' && selected && !event.defaultPrevented) { event.preventDefault(); close(); } }, { signal: api.signal });
+  function pointerPosition(event) {
+    const matrix = api.svg.getScreenCTM();
+    if (!matrix) return null;
+    const point = api.svg.createSVGPoint();
+    point.x = event.clientX; point.y = event.clientY;
+    return point.matrixTransform(matrix.inverse());
+  }
+  api.svg.addEventListener('pointerdown', event => {
+    if (drag || event.button !== 0 || !isBody(event.target)) return;
+    const point = pointerPosition(event);
+    if (!point) return;
+    suppressClick = false;
+    const state = oscillatorState(params, api.clock.time, gravity);
+    const x = pendulum ? 400 + params.length * 95 * Math.sin(state.position) : 400 + state.position * 180;
+    const y = pendulum ? 100 + params.length * 95 * Math.cos(state.position) : 320;
+    drag = { id: event.pointerId, startX: event.clientX, startY: event.clientY,
+      offsetX: point.x - x, offsetY: point.y - y, amplitude: params.amplitude, playing: api.clock.playing, moved: false };
+    api.svg.setPointerCapture(event.pointerId);
+  }, { signal: api.signal });
+  api.svg.addEventListener('pointermove', event => {
+    if (!drag || event.pointerId !== drag.id) return;
+    if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 4) return;
+    const point = pointerPosition(event);
+    if (!point) return;
+    event.preventDefault();
+    drag.moved = true;
+    scene.body.style.cursor = 'grabbing';
+    const displacement = pendulum
+      ? Math.atan2(point.x - drag.offsetX - 400, point.y - drag.offsetY - 100) * 180 / Math.PI
+      : (point.x - drag.offsetX - 400) / 180;
+    const clamped = Math.max(amplitudeSpec.min, Math.min(amplitudeSpec.max, displacement));
+    params.amplitude = Number((Math.round((clamped - amplitudeSpec.min) / amplitudeSpec.step) * amplitudeSpec.step + amplitudeSpec.min).toFixed(6));
+    controls.get('amplitude').update(params.amplitude);
+    reset();
+  }, { signal: api.signal });
+  function finishDrag(event) {
+    if (!drag || event.pointerId !== drag.id) return;
+    const finished = drag; drag = null;
+    scene.body.style.cursor = 'grab';
+    if (api.svg.hasPointerCapture(finished.id)) api.svg.releasePointerCapture(finished.id);
+    if (!finished.moved) return;
+    suppressClick = true;
+    if (event.type !== 'pointerup') {
+      params.amplitude = finished.amplitude;
+      controls.get('amplitude').update(params.amplitude);
+      reset();
+      if (finished.playing) api.clock.play();
+    } else api.clock.play();
+  }
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) api.svg.addEventListener(type, finishDrag, { signal: api.signal });
   function buildScene() {
     const svg = api.svg;
     s('path', { d: pendulum ? 'M 300 80 H 500 M 400 80 V 100' : 'M 115 180 V 350 H 700', stroke: '#839775', 'stroke-width': 4, fill: 'none' }, svg);
@@ -45,6 +97,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     const reference = s('line', { x1: 400, x2: 400, y1: pendulum ? 100 : 230, y2: pendulum ? 410 : 375, stroke: '#9caa91', 'stroke-dasharray': '5 6' }, svg);
     const connector = s('path', { fill: 'none', stroke: pendulum ? '#ad8959' : '#6f8e65', 'stroke-width': 3 }, svg);
     const body = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': `${kind}-analysis`, 'aria-describedby': hint.id }, svg);
+    body.style.touchAction = 'none'; body.style.cursor = 'grab';
     s('circle', { class: 'mass-hit', r: 64, fill: 'transparent', 'aria-hidden': 'true' }, body);
     if (pendulum) s('circle', { class: 'mass-body', r: 19, fill: '#c38e60' }, body);
     else s('rect', { class: 'mass-body', x: -30, y: -30, width: 60, height: 60, rx: 7, fill: '#61816b' }, body);
@@ -88,7 +141,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
       x = 400 + length * Math.sin(state.position); y = 100 + length * Math.cos(state.position);
       scene.connector.setAttribute('d', `M 400 100 L ${x} ${y}`);
       scene.reference.setAttribute('y2', 100 + length);
-      const restoring = -state.position / (params.amplitude * Math.PI / 180) * 75;
+      const restoring = -state.position / (Math.abs(params.amplitude) * Math.PI / 180 || 1) * 75;
       dx = restoring * Math.cos(state.position); dy = -restoring * Math.sin(state.position);
     } else {
       x = 400 + state.position * 180; y = 320;
@@ -100,7 +153,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
         for (let n = 0; n <= 20; n++) points.push(`L ${start + 20 + (645 - start) * n / 20} ${n === 0 || n === 20 ? 320 : 320 + (n % 2 ? -12 : 12)}`);
         points.push('L 685 320'); scene.secondConnector.setAttribute('d', points.join(' '));
       }
-      dx = -state.position / params.amplitude * 85; dy = 0;
+      dx = -state.position / (Math.abs(params.amplitude) || 1) * 85; dy = 0;
     }
     scene.body.setAttribute('transform', `translate(${x} ${y})`);
     scene.body.setAttribute('aria-label', words.block); scene.body.setAttribute('aria-pressed', String(selected));

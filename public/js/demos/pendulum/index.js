@@ -5,6 +5,6 @@ export const mount = options => mountOscillator({ ...options, kind: 'pendulum', 
   specs: [
     { key: 'mass', symbol: 'm', min: 1, max: 30, step: 0.5, unit: 'kg' },
     { key: 'length', symbol: 'l', min: 0.5, max: 3, step: 0.1, unit: 'm' },
-    { key: 'amplitude', symbol: 'θ_0', min: 1, max: 15, step: 0.5, unit: '°' },
+    { key: 'amplitude', symbol: 'θ_0', min: -15, max: 15, step: 0.5, unit: '°' },
   ],
 });

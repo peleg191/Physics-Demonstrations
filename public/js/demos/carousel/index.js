@@ -77,6 +77,13 @@ export function mount({ root, lang }) {
     // Both views are schematic; the side-view height preserves the selected string angle.
     const scale = Math.min(125 / params.radius, 250 / state.height);
     const r = params.radius * scale, h = state.height * scale, x = 215 + r * c, y = 90 + h;
+    // Reserve both complete orbits, including the string and initial dimensions.
+    api.setGraphObstacles([
+      { left: 80, top: 75, width: 280, height: Math.min(390, h + 95) },
+      { left: 445, top: 105, width: 290, height: 290 },
+      { left: 145, top: 30, width: 140, height: 28 },
+      { left: 520, top: 30, width: 140, height: 28 },
+    ]);
     orbit.setAttribute('y1', y); orbit.setAttribute('y2', y); orbit.setAttribute('x1', 215 - r); orbit.setAttribute('x2', 215 + r);
     string.setAttribute('d', `M 215 90 L ${x} ${y}`);
     radius.setAttribute('d', `M 590 250 L ${590 + 125 * c} ${250 + 125 * sn}`);

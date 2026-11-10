@@ -27,11 +27,25 @@ export function motionModel(sample, { angular = false, components = ['graphMotio
 }
 
 // A model supplies SI values at any time; the shared shell owns playback.
-export function createMotionGraphs({ parent, panel, signal, lang, duration, model, time, obstacles = () => [] }) {
+export function createMotionGraphs({ parent, panel, transport, signal, lang, duration, model, time, seek, obstacles = () => [] }) {
   let t = translator(lang), dirty = true, plots = [];
   const controls = element('div', 'graph-controls');
   const toggle = element('label', 'compare-toggle');
-  const checkbox = element('input'); checkbox.type = 'checkbox';
+  const checkbox = element('input'); checkbox.type = 'checkbox'; checkbox.checked = false;
+  const graphButton = button('', 'button secondary graph-visibility-toggle');
+  const icon = s('svg', { viewBox: '0 0 24 24', class: 'transport-icon', 'aria-hidden': 'true', focusable: 'false' });
+  s('path', { d: 'M4 3v17h17M7 15l4-6 4 3 5-7', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, icon);
+  graphButton.append(icon); transport?.append(graphButton);
+  function labelVisibility() {
+    const label = t(checkbox.checked ? 'hideGraphs' : 'showGraphs');
+    graphButton.setAttribute('aria-label', label);
+    graphButton.setAttribute('title', label);
+    graphButton.setAttribute('aria-pressed', String(checkbox.checked));
+  }
+  graphButton.addEventListener('click', () => {
+    checkbox.checked = !checkbox.checked;
+    syncVisibility();
+  }, { signal });
   const toggleText = element('span'); toggle.append(checkbox, toggleText);
   controls.append(toggle); panel.append(controls);
   const root = element('section', 'motion-graphs'); root.hidden = true;
@@ -87,7 +101,7 @@ export function createMotionGraphs({ parent, panel, signal, lang, duration, mode
     if (!expanded) return;
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setExpanded(false); }
     if (event.key === 'Tab') {
-      const focusable = [...(heading.disabled ? [] : [heading]), expand, close, ...plots.map(plot => plot.tab)];
+      const focusable = [...(heading.disabled ? [] : [heading]), expand, close, ...plots.filter(plot => !plot.card.hidden).map(plot => plot.card), ...plots.map(plot => plot.tab)];
       const index = focusable.indexOf(document.activeElement);
       if (event.shiftKey && index <= 0) { event.preventDefault(); focusable.at(-1).focus(); }
       else if (!event.shiftKey && (index === -1 || index === focusable.length - 1)) { event.preventDefault(); focusable[0].focus(); }
@@ -98,6 +112,15 @@ export function createMotionGraphs({ parent, panel, signal, lang, duration, mode
     const available = root.clientWidth ?? width ?? 0;
     grid.classList.toggle('is-horizontal', graphsSideBySide(available, selectedGraphs.size)
       || (mobileLayout.matches && selectedGraphs.size > 1 && (landscapeLayout.matches || available >= selectedGraphs.size * 180 + 24)));
+    for (const plot of plots) {
+      if (plot.card.hidden) continue;
+      const width = plot.card.clientWidth, height = plot.card.clientHeight;
+      if (!(width > 0 && height > 0)) continue;
+      const key = `${width}:${height}`;
+      if (plot.size === key) continue;
+      plot.size = key;
+      plot.draw(width, height);
+    }
   }
   let placementKey = '', placement;
   const floating = attachFloatingWindow({ root, parent, handle: heading, resize, signal,
@@ -131,16 +154,15 @@ export function createMotionGraphs({ parent, panel, signal, lang, duration, mode
   }
   function hide() {
     setExpanded(false, false);
-    checkbox.checked = false; root.hidden = true; parent.classList.toggle('has-graphs', false);
-    parent.classList.toggle('graphs-docked', false);
-    checkbox.focus({ preventScroll: true });
+    checkbox.checked = false; syncVisibility();
+    (transport ? graphButton : checkbox).focus({ preventScroll: true });
   }
   close.addEventListener('click', hide, { signal });
 
   function build() {
     plots = []; grid.replaceChildren(); tabs.replaceChildren();
     const end = duration(), config = model();
-    note.textContent = t(config.note ?? 'graphNote');
+    note.textContent = `${t(config.note ?? 'graphNote')}${seek ? ` ${t('graphScrubHint')}` : ''}`;
     root.replaceChildren(header, tabs, note);
     if (config.components.length > 1) {
       const legend = element('ul', 'graph-legend');
@@ -165,37 +187,92 @@ export function createMotionGraphs({ parent, panel, signal, lang, duration, mode
       card.setAttribute('role', 'region'); card.setAttribute('aria-labelledby', tab.id);
       tab.setAttribute('aria-controls', card.id);
       tab.addEventListener('click', () => toggleGraph(index), { signal }); tabs.append(tab);
-      const svg = s('svg', { viewBox: '0 0 480 230', role: 'img', 'aria-label': `${quantity.symbol} (${quantity.unit})`, direction: 'ltr' });
-      const labelArea = s('foreignObject', { x: 62, y: 0, width: 398, height: 24 }, svg);
-      const quantityTitle = element('div', 'graph-quantity-label');
-      quantityTitle.append(quantityLabel(quantity.symbol, quantity.unit)); labelArea.append(quantityTitle);
-      const samples = Array.from({ length: 321 }, (_, i) => quantity.sample(end * i / 320));
-      const values = samples.flat();
-      let low = Math.min(0, ...values), high = Math.max(0, ...values);
-      const padding = (high - low || Math.max(Math.abs(high), 1)) * 0.12;
-      low -= padding; high += padding;
-      // An onset-only model can have a zero-duration observation.
-      const x = time => end > 0 ? 62 + time / end * 398 : 62;
-      const y = value => 184 - (value - low) / (high - low) * 160;
-      for (const level of [low, 0, high]) {
-        s('path', { d: `M 62 ${y(level)} H 460`, class: level === 0 ? 'graph-axis' : 'graph-gridline' }, svg);
-        svgText(svg, 55, y(level) + 4, format(level, 2), { 'text-anchor': 'end' });
+      const plot = { card, tab, quantity };
+      if (seek) {
+        card.tabIndex = 0;
+        card.setAttribute('role', 'slider');
+        card.setAttribute('aria-label', `${quantity.symbol}: ${t('graphScrub')}`);
+        card.setAttribute('aria-valuemin', '0');
+        card.setAttribute('aria-valuemax', String(end));
+        card.setAttribute('aria-orientation', 'horizontal');
+        card.style.touchAction = 'none'; card.style.cursor = 'crosshair';
+        let pointer = null;
+        function scrub(event) {
+          const matrix = plot.svg.getScreenCTM();
+          if (!matrix) return;
+          const point = plot.svg.createSVGPoint();
+          point.x = event.clientX; point.y = event.clientY;
+          const local = point.matrixTransform(matrix.inverse());
+          seek(end * Math.max(0, Math.min(1, (local.x - plot.left) / plot.plotWidth)));
+        }
+        card.addEventListener('pointerdown', event => {
+          if (event.button !== 0 || pointer !== null) return;
+          event.preventDefault(); event.stopPropagation();
+          pointer = event.pointerId; card.setPointerCapture(pointer);
+          card.focus({ preventScroll: true }); scrub(event);
+        }, { signal });
+        card.addEventListener('pointermove', event => {
+          if (event.pointerId !== pointer) return;
+          event.preventDefault(); scrub(event);
+        }, { signal });
+        const finish = event => {
+          if (event.pointerId !== pointer) return;
+          if (event.type === 'pointerup') scrub(event);
+          const id = pointer; pointer = null;
+          if (card.hasPointerCapture(id)) card.releasePointerCapture(id);
+        };
+        for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) card.addEventListener(type, finish, { signal });
+        card.addEventListener('click', event => event.stopPropagation(), { signal });
+        card.addEventListener('keydown', event => {
+          const step = end / (event.shiftKey ? 20 : 100);
+          const target = { ArrowLeft: time() - step, ArrowDown: time() - step,
+            ArrowRight: time() + step, ArrowUp: time() + step, Home: 0, End: end }[event.key];
+          if (target === undefined) return;
+          event.preventDefault(); event.stopPropagation(); seek(target);
+        }, { signal });
       }
-      s('path', { d: 'M 62 24 V 184 H 460', class: 'graph-axis' }, svg);
-      for (let i = 0; i <= 4; i++) {
-        const seconds = end * i / 4;
-        svgText(svg, x(seconds), 205, format(seconds, 1), { 'text-anchor': 'middle' });
-      }
-      const timeLabel = svgText(svg, 460, 224, '', { 'text-anchor': 'end', class: 'graph-time-label' });
-      const variable = s('tspan', { 'font-style': 'italic' }, timeLabel); variable.textContent = 't';
-      const unit = s('tspan', { 'font-style': 'normal' }, timeLabel); unit.textContent = ' [s]';
-      config.components.forEach((component, index) => {
-        s('path', { d: samples.map((sample, i) => `${i ? 'L' : 'M'} ${x(end * i / 320)} ${y(sample[index])}`).join(' '), class: `graph-curve graph-series-${index}` }, svg);
-      });
-      const cursor = s('path', { class: 'graph-cursor' }, svg);
-      const dots = config.components.map((_, index) => s('circle', { r: 4, class: `graph-dot graph-series-${index}` }, svg));
-      card.append(svg); grid.append(card);
-      plots.push({ card, tab, quantity, cursor, dots, x, y });
+      plot.draw = (width = 480, height = 230) => {
+        const left = Math.min(62, width * 0.22), right = Math.max(left + 1, width - 20);
+        const bottom = Math.max(25, height - 46);
+        const plotWidth = right - left, plotHeight = bottom - 24;
+        const svg = s('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `${quantity.symbol} (${quantity.unit})`, direction: 'ltr' });
+        const labelArea = s('foreignObject', { x: left, y: 0, width: plotWidth, height: 24 }, svg);
+        const quantityTitle = element('div', 'graph-quantity-label');
+        quantityTitle.append(quantityLabel(quantity.symbol, quantity.unit)); labelArea.append(quantityTitle);
+        const samples = Array.from({ length: 321 }, (_, i) => quantity.sample(end * i / 320));
+        const values = samples.flat();
+        let low = Math.min(0, ...values), high = Math.max(0, ...values);
+        const padding = (high - low || Math.max(Math.abs(high), 1)) * 0.12;
+        low -= padding; high += padding;
+        // An onset-only model can have a zero-duration observation.
+        const x = time => end > 0 ? left + time / end * plotWidth : left;
+        const y = value => bottom - (value - low) / (high - low) * plotHeight;
+        for (const level of [low, 0, high]) {
+          s('path', { d: `M ${left} ${y(level)} H ${right}`, class: level === 0 ? 'graph-axis' : 'graph-gridline' }, svg);
+          svgText(svg, left - 7, y(level) + 4, format(level, 2), { 'text-anchor': 'end' });
+        }
+        s('path', { d: `M ${left} 24 V ${bottom} H ${right}`, class: 'graph-axis' }, svg);
+        for (let i = 0; i <= 4; i++) {
+          const seconds = end * i / 4;
+          svgText(svg, x(seconds), bottom + 21, format(seconds, 1), { 'text-anchor': 'middle' });
+        }
+        const timeLabel = svgText(svg, right, height - 6, '', { 'text-anchor': 'end', class: 'graph-time-label' });
+        const variable = s('tspan', { 'font-style': 'italic' }, timeLabel); variable.textContent = 't';
+        const unit = s('tspan', { 'font-style': 'normal' }, timeLabel); unit.textContent = ' [s]';
+        config.components.forEach((component, index) => {
+          s('path', { d: samples.map((sample, i) => `${i ? 'L' : 'M'} ${x(end * i / 320)} ${y(sample[index])}`).join(' '), class: `graph-curve graph-series-${index}` }, svg);
+        });
+        const cursor = s('path', { class: 'graph-cursor' }, svg);
+        const dots = config.components.map((_, index) => s('circle', { r: 4, class: `graph-dot graph-series-${index}` }, svg));
+        card.replaceChildren(svg);
+        Object.assign(plot, { svg, left, plotWidth, cursor, dots, x, y, bottom });
+        const seconds = time();
+        cursor.setAttribute('d', `M ${x(seconds)} 24 V ${bottom}`);
+        const current = quantity.sample(seconds);
+        dots.forEach((dot, i) => { dot.setAttribute('cx', x(seconds)); dot.setAttribute('cy', y(current[i])); });
+      };
+      plot.draw(); grid.append(card);
+      plots.push(plot);
     }
     applyGraphSelection();
     dirty = false;
@@ -205,20 +282,27 @@ export function createMotionGraphs({ parent, panel, signal, lang, duration, mode
     if (!checkbox.checked) return;
     if (dirty) build();
     for (const plot of plots) {
+      if (seek) {
+        plot.card.setAttribute('aria-valuenow', String(seconds));
+        plot.card.setAttribute('aria-valuetext', `${format(seconds, 2)} s`);
+      }
       const values = plot.quantity.sample(seconds);
-      plot.cursor.setAttribute('d', `M ${plot.x(seconds)} 24 V 184`);
+      plot.cursor.setAttribute('d', `M ${plot.x(seconds)} 24 V ${plot.bottom}`);
       plot.dots.forEach((dot, i) => { dot.setAttribute('cx', plot.x(seconds)); dot.setAttribute('cy', plot.y(values[i])); });
     }
   }
-  checkbox.addEventListener('change', () => {
+  function syncVisibility() {
+    labelVisibility();
     parent.classList.toggle('has-graphs', checkbox.checked);
     root.hidden = !checkbox.checked;
     if (!checkbox.checked) setExpanded(false, false);
     syncMobileLayout(); update(time());
     if (checkbox.checked && parent.getBoundingClientRect) floating.fit();
-  }, { signal });
+  }
+  checkbox.addEventListener('change', syncVisibility, { signal });
   function setLanguage(lang) {
     t = translator(lang); toggleText.textContent = t('showGraphs'); heading.textContent = t('motionGraphs');
+    labelVisibility();
     root.setAttribute('aria-label', t('motionGraphs')); tabs.setAttribute('aria-label', t('graphSelect'));
     labelWindow(); close.setAttribute('aria-label', t('graphClose')); resize.setAttribute('aria-label', t('graphResize'));
     update(time(), true);

@@ -18,16 +18,27 @@ for (const entry of demonstrations) {
       assert.equal(root.parentNode, stage);
       const control = fixture.find(hasClass('graph-controls'));
       const toggle = descendants(control, node => node.type === 'checkbox')[0];
+      const graphButton = fixture.find(hasClass('graph-visibility-toggle'));
+      assert.ok(descendants(fixture.find(hasClass('transport')), node => node === graphButton).length);
       assert.equal(root.hidden, true);
+      assert.equal(graphButton.getAttribute('aria-pressed'), 'false');
+      graphButton.dispatchEvent(new Event('click'));
+      assert.equal(root.hidden, false);
+      assert.equal(toggle.checked, true);
+      assert.equal(graphButton.getAttribute('aria-label'), 'Hide motion graphs');
+      graphButton.dispatchEvent(new Event('click'));
+      assert.equal(root.hidden, true);
+      assert.equal(toggle.checked, false);
       toggle.checked = true; toggle.dispatchEvent(new Event('change'));
+      assert.equal(graphButton.getAttribute('aria-pressed'), 'true');
       assert.equal(root.hidden, false);
       assert.match(stage.className, /has-graphs/);
       const multiSeries = ['basketball', 'friction-stacked', 'carousel'].includes(entry.id);
       const legends = descendants(root, hasClass('graph-legend'));
       assert.equal(legends.length, multiSeries ? 1 : 0);
       for (const legend of legends) {
-        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Upper block · solid/ : entry.id === 'carousel' ? /Horizontal plane · x/ : /Horizontal motion \(x\) · solid/);
-        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Lower block · dashed/ : entry.id === 'carousel' ? /Horizontal plane · y/ : /Vertical motion \(y\) · dashed/);
+        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Upper block · solid/ : entry.id === 'carousel' ? /Horizontal direction \(x\) · solid/ : /Horizontal motion \(x\) · solid/);
+        assert.match(legend.textContent, entry.id === 'friction-stacked' ? /Lower block · dashed/ : entry.id === 'carousel' ? /Vertical direction \(y\) · dashed/ : /Vertical motion \(y\) · dashed/);
       }
       const charts = descendants(root, node => node.tagName === 'svg');
       assert.equal(charts.length, 3);
@@ -66,6 +77,7 @@ for (const entry of demonstrations) {
       assert.equal(tabs[0].getAttribute('aria-pressed'), 'false');
       assert.equal(fixture.find(hasClass('graph-value')), undefined);
       demo.setLanguage('he');
+      assert.equal(graphButton.getAttribute('aria-label'), 'הסתרת גרפי תנועה');
       assert.match(control.textContent, /הצגת גרפי תנועה/);
       assert.deepEqual(descendants(root, hasClass('graph-card')).map(card => card.hidden), [true, false, false]);
       assert.equal(descendants(root, node => node.getAttribute('class') === 'graph-cursor')[0].getAttribute('d'), cursor.getAttribute('d'));
@@ -116,6 +128,19 @@ test('graph window switches layout after selection and manual resizing without o
     tabs[2].dispatchEvent(new Event('click'));
     assert.equal(root.style.width, '490px');
     assert.equal(hasClass('is-horizontal')(grid), true);
+    const card = descendants(root, hasClass('graph-card'))[0];
+    Object.defineProperty(card, 'clientWidth', { configurable: true, value: 360 });
+    Object.defineProperty(card, 'clientHeight', { configurable: true, value: 300 });
+    resize.dispatchEvent(key);
+    let chart = descendants(card, node => node.tagName === 'svg')[0];
+    assert.equal(chart.getAttribute('viewBox'), '0 0 360 300');
+    assert.match(descendants(card, node => node.getAttribute('class') === 'graph-cursor')[0].getAttribute('d'), /V 254$/);
+    Object.defineProperty(card, 'clientWidth', { configurable: true, value: 600 });
+    Object.defineProperty(card, 'clientHeight', { configurable: true, value: 150 });
+    resize.dispatchEvent(key);
+    chart = descendants(card, node => node.tagName === 'svg')[0];
+    assert.equal(chart.getAttribute('viewBox'), '0 0 600 150');
+    assert.equal(tabs[0].getAttribute('aria-pressed'), 'true');
   } finally { demo?.dispose(); fixture.cleanup(); }
 });
 
@@ -150,3 +175,51 @@ test('switching simulations starts fresh graph geometry after moving and resizin
     }
   } finally { demo?.dispose(); fixture.cleanup(); }
 });
+
+for (const name of ['spring', 'double-spring', 'pendulum']) {
+  test(`${name}: graph scrubbing synchronizes the scene, pauses playback, and resumes`, async () => {
+    const fixture = browserFixture(); let demo;
+    try {
+      demo = (await demonstrations.find(entry => entry.id === name).load()).mount({ root: fixture.root, lang: 'en' });
+      fixture.find(hasClass('graph-visibility-toggle')).dispatchEvent(new Event('click'));
+      const graph = fixture.find(hasClass('motion-graphs'));
+      const card = descendants(graph, hasClass('graph-card'))[0];
+      const svg = card.children[0];
+      svg.getScreenCTM = () => ({ inverse: () => ({}) });
+      svg.createSVGPoint = () => ({ x: 0, y: 0, matrixTransform() { return { x: this.x, y: this.y }; } });
+      let captured = null;
+      card.setPointerCapture = id => { captured = id; };
+      card.hasPointerCapture = id => captured === id;
+      card.releasePointerCapture = () => { captured = null; };
+      const body = fixture.find(node => node.getAttribute('class') === 'selectable-mass');
+      const initial = body.getAttribute('transform');
+      const play = fixture.find(node => node.tagName === 'button' && node.textContent === 'Play');
+      play.dispatchEvent(new Event('click')); assert.equal(fixture.frames.size, 1);
+      function pointer(type, x) {
+        const event = new Event(type, { cancelable: true });
+        Object.defineProperties(event, { pointerId: { value: 7 }, button: { value: 0 }, clientX: { value: x }, clientY: { value: 80 } });
+        card.dispatchEvent(event);
+      }
+      const end = Number(card.getAttribute('aria-valuemax'));
+      pointer('pointerdown', 62 + 398 / 8);
+      assert.equal(fixture.frames.size, 0);
+      assert.ok(Math.abs(Number(card.getAttribute('aria-valuenow')) - end / 8) < 1e-9);
+      assert.notEqual(body.getAttribute('transform'), initial);
+      pointer('pointermove', -100);
+      assert.equal(Number(card.getAttribute('aria-valuenow')), 0);
+      assert.equal(card.children[0], svg); // Seeking to zero preserves the active pointer target.
+      pointer('pointermove', 2000);
+      assert.equal(Number(card.getAttribute('aria-valuenow')), end);
+      pointer('pointerup', 62 + 398 / 8); assert.equal(captured, null);
+      const cursors = descendants(graph, node => node.getAttribute('class') === 'graph-cursor');
+      assert.equal(new Set(cursors.map(node => node.getAttribute('d'))).size, 1);
+      const key = new Event('keydown', { cancelable: true }); Object.defineProperty(key, 'key', { value: 'ArrowRight' });
+      card.dispatchEvent(key);
+      assert.ok(Math.abs(Number(card.getAttribute('aria-valuenow')) - end * 0.135) < 1e-9);
+      play.dispatchEvent(new Event('click')); fixture.frame(0); fixture.frame(100);
+      assert.ok(Number(card.getAttribute('aria-valuenow')) > end * 0.135);
+      demo.setLanguage('he');
+      assert.match(descendants(graph, hasClass('graph-card'))[0].getAttribute('aria-label'), /זמן התצפית/);
+    } finally { demo?.dispose(); fixture.cleanup(); }
+  });
+}

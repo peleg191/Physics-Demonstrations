@@ -2,7 +2,7 @@ export const strings = {
   en: {
     mass: 'Bob mass', length: 'Pendulum length', amplitude: 'Initial angle', position: 'Angle', velocity: 'Angular velocity', period: 'Period',
     caption: 'SMALL-ANGLE PENDULUM', title: 'Pendulum equations', close: 'Close analysis', block: 'Pendulum bob: show equations',
-    hint: 'Select the bob to inspect its restoring force and equations. Use Enter or Space with the keyboard.',
+    hint: 'Drag and release to set the initial angle. Select the bob to inspect its restoring force and equations. Use Enter or Space with the keyboard.',
     about: 'A point mass on a massless, inextensible string, released from rest. No damping or driving. Initial angles are limited to 15°. The dynamics use sin θ ≈ θ with θ in radians; energy uses the same quadratic approximation. The drawing places the bob on a circular arc.',
     axis: 'θ is measured from the downward vertical, positive to the right, in radians. At release θ(0) = θ₀ and angular velocity is zero. The arrow shows the approximate tangential restoring force, not the total force.',
     paused: 'Playback paused to inspect the bob. Press Play to continue.',
@@ -17,7 +17,7 @@ export const strings = {
   he: {
     mass: 'מסת המשקולת', length: 'אורך המטוטלת', amplitude: 'זווית התחלתית', position: 'זווית', velocity: 'מהירות זוויתית', period: 'זמן מחזור',
     caption: 'מטוטלת בזוויות קטנות', title: 'משוואות המטוטלת', close: 'סגירת הניתוח', block: 'משקולת המטוטלת: הצגת משוואות',
-    hint: 'בחרו במשקולת להצגת הכוח המחזיר והמשוואות. במקלדת אפשר להשתמש ב־Enter או ברווח.',
+    hint: 'גררו ושחררו לשינוי הזווית ההתחלתית. בחרו במשקולת להצגת הכוח המחזיר והמשוואות. במקלדת אפשר להשתמש ב־Enter או ברווח.',
     about: 'מסה נקודתית על חוט חסר מסה שאינו נמתח, משוחררת ממנוחה. ללא ריסון או כוח מניע. הזווית ההתחלתית מוגבלת ל־15°. התנועה מחושבת בקירוב sin θ ≈ θ כאשר θ ברדיאנים; האנרגיה מחושבת באותו קירוב ריבועי. באיור המשקולת נעה על קשת מעגלית.',
     axis: 'הזווית θ נמדדת מהאנך כלפי מטה, חיובית ימינה, ברדיאנים. ברגע השחרור θ(0) = θ₀ והמהירות הזוויתית אפס. החץ מציג את הכוח המשיקי המחזיר בקירוב, ולא את הכוח הכולל.',
     paused: 'התנועה הושהתה לבחינת המשקולת. לחצו על הפעלה להמשך.',

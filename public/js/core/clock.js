@@ -21,6 +21,11 @@ export function createClock({ onTick, duration, request = cb => requestAnimation
     play() { if (disposed || playing) return; if (time >= duration()) time = 0; playing = true; last = null; onTick(time, playing); schedule(); },
     pause() { stop(); if (!disposed) onTick(time, playing); },
     reset() { stop(); time = 0; if (!disposed) onTick(time, playing); },
+    seek(seconds) {
+      if (disposed || !Number.isFinite(seconds)) return;
+      stop(); time = Math.max(0, Math.min(duration(), seconds));
+      onTick(time, playing, { seeking: true });
+    },
     step(dt = 0.05) { if (disposed) return; stop(); time = Math.min(duration(), time + dt); onTick(time, playing); },
     setRate(value) { rate = value; last = null; },
     dispose() { stop(); disposed = true; },

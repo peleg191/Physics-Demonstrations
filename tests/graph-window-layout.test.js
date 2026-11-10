@@ -41,3 +41,13 @@ test('small canvases remain usable even when avoiding all overlap is impossible'
     assert.ok(result.left + result.width <= width && result.top + result.height <= height);
   }
 });
+
+test('initial placement finds the clear gap between two simulation views', () => {
+  const obstacles = [
+    { left: 0, top: 0, width: 360, height: 500 },
+    { left: 640, top: 0, width: 360, height: 500 },
+  ];
+  const result = chooseGraphWindow({ width: 1000, height: 500, obstacles });
+  assert.ok(obstacles.every(obstacle => !intersects(result, obstacle)), JSON.stringify(result));
+  assert.ok(result.left >= 360 && result.left + result.width <= 640);
+});
