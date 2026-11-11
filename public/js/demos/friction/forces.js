@@ -1,4 +1,4 @@
-const colors = { weight: '#a94729', normal: '#267a62', tension: '#246b9c', friction: '#994e94', applied: '#b77820' };
+const colors = { weight: 'var(--scene-force-weight, #a94729)', normal: 'var(--scene-force-normal, #267a62)', tension: 'var(--scene-force-blue, #246b9c)', friction: 'var(--scene-force-friction, #994e94)', applied: 'var(--scene-force-applied, #b77820)' };
 const vector = (id, latex, fx, fy, color, ox = 0, oy = 0) => ({ id, latex, fx, fy, color: colors[color], ox, oy });
 export function bodyForces(kind, params, state, g) {
   if (kind === 'stacked') {

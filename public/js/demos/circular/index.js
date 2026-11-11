@@ -28,7 +28,7 @@ export function mountCircularSystem(kind, { root, lang }) {
   const bowl = kind === 'energy-bowl', tube = kind === 'rotating-tube', gravity = physicsConfig.gravity;
   let params = { ...modelDefaults[kind] }, words = wordsFor(kind, lang), selected = false, paused = false, resolved = false, ready = false, geometrySignature = '';
   const model = models[kind], controls = new Map(), specs = specsFor(kind);
-  const api = createExperiment({ root, lang, system: kind, render, reset, defaults: restore,
+  const api = createExperiment({ root, lang, showQuizForces: () => { selected = true; }, system: kind, render, reset, defaults: restore,
     duration: () => duration(kind, params, gravity),
     motion: () => motionModel(time => { const state = model(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; },
       { note: bowl ? 'graphBowlNote' : 'graphCircularNote' }),
@@ -77,46 +77,46 @@ export function mountCircularSystem(kind, { root, lang }) {
   function mass(x, y) {
     const group = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, transform: `translate(${x} ${y})`, 'aria-controls': `${kind}-analysis`, 'aria-describedby': hint.id }, api.svg);
     s('circle', { class: 'mass-hit', r: 32, fill: 'transparent', 'aria-hidden': 'true' }, group);
-    s('circle', { class: 'mass-body', r: 16, fill: '#c38e60' }, group);
+    s('circle', { class: 'mass-body', r: 16, fill: 'var(--scene-warm, #c38e60)' }, group);
     svgText(group, 0, 5, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
     group.addEventListener('click', select, { signal: api.signal });
     group.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(); } }, { signal: api.signal });
     bodies.push(group); return group;
   }
   if (bowl) {
-    s('path', { d: 'M 180 140 A 220 220 0 0 0 620 140', fill: 'none', stroke: '#61816b', 'stroke-width': 6 }, api.svg);
-    s('path', { d: 'M 180 140 H 620 M 400 140 V 360', fill: 'none', stroke: '#9ca79c', 'stroke-dasharray': '5 5' }, api.svg);
-    s('circle', { cx: 400, cy: 140, r: 4, fill: '#61816b' }, api.svg);
+    s('path', { d: 'M 180 140 A 220 220 0 0 0 620 140', fill: 'none', stroke: 'var(--scene-green, #61816b)', 'stroke-width': 6 }, api.svg);
+    s('path', { d: 'M 180 140 H 620 M 400 140 V 360', fill: 'none', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-dasharray': '5 5' }, api.svg);
+    s('circle', { cx: 400, cy: 140, r: 4, fill: 'var(--scene-green, #61816b)' }, api.svg);
     svgText(api.svg, 387, 127, 'O');
     for (const [name, angle] of [['A', 90], ['B', 30], ['C', 0]]) {
       const theta = angle * Math.PI / 180, x = 400 + 220 * Math.sin(theta), y = 140 + 220 * Math.cos(theta);
-      s('circle', { cx: x, cy: y, r: 4, fill: '#61816b' }, api.svg);
+      s('circle', { cx: x, cy: y, r: 4, fill: 'var(--scene-green, #61816b)' }, api.svg);
       svgText(api.svg, x + (name === 'C' ? -8 : 16), y + (name === 'C' ? 28 : 7), name);
     }
-    upperString = s('path', { fill: 'none', stroke: '#9ca79c', 'stroke-dasharray': '4 5' }, api.svg);
+    upperString = s('path', { fill: 'none', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-dasharray': '4 5' }, api.svg);
     body = mass(620, 140);
   } else if (tube) {
     label(270, 45, 'top'); label(620, 85, 'side');
-    s('circle', { cx: 270, cy: 250, r: 140, fill: 'none', stroke: '#9ca79c', 'stroke-dasharray': '5 5' }, api.svg);
+    s('circle', { cx: 270, cy: 250, r: 140, fill: 'none', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-dasharray': '5 5' }, api.svg);
     support = s('g', {}, api.svg);
-    s('rect', { x: -12, y: -25, width: 195, height: 50, rx: 10, fill: '#e5e7d9', stroke: '#61816b', 'stroke-width': 2 }, support);
-    s('path', { d: 'M 0 -19 H 178 M 0 19 H 178', fill: 'none', stroke: '#9ca79c', 'stroke-width': 1.5 }, support);
-    s('path', { d: 'M 620 130 V 380', class: 'tube-side-axis', fill: 'none', stroke: '#9ca79c', 'stroke-width': 2, 'stroke-dasharray': '5 5' }, api.svg);
-    sideTube = s('path', { class: 'tube-side-housing', fill: 'none', stroke: '#61816b', 'stroke-width': 48, 'stroke-linecap': 'round' }, api.svg);
-    sideTubeInner = s('path', { fill: 'none', stroke: '#e5e7d9', 'stroke-width': 44, 'stroke-linecap': 'round' }, api.svg);
+    s('rect', { x: -12, y: -25, width: 195, height: 50, rx: 10, fill: 'var(--scene-surface, #e5e7d9)', stroke: 'var(--scene-green, #61816b)', 'stroke-width': 2 }, support);
+    s('path', { d: 'M 0 -19 H 178 M 0 19 H 178', fill: 'none', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-width': 1.5 }, support);
+    s('path', { d: 'M 620 130 V 380', class: 'tube-side-axis', fill: 'none', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-width': 2, 'stroke-dasharray': '5 5' }, api.svg);
+    sideTube = s('path', { class: 'tube-side-housing', fill: 'none', stroke: 'var(--scene-green, #61816b)', 'stroke-width': 48, 'stroke-linecap': 'round' }, api.svg);
+    sideTubeInner = s('path', { fill: 'none', stroke: 'var(--scene-surface, #e5e7d9)', 'stroke-width': 44, 'stroke-linecap': 'round' }, api.svg);
     body = mass(410, 250); sideMass = mass(720, 250);
     sideMass.setAttribute('data-view', 'side');
-    s('circle', { cx: 270, cy: 250, r: 5, fill: '#476b60' }, api.svg);
+    s('circle', { cx: 270, cy: 250, r: 5, fill: 'var(--scene-edge, #476b60)' }, api.svg);
     svgText(api.svg, 252, 236, 'O');
   } else {
     label(285, 40, 'side'); label(625, 80, 'top');
-    s('path', { d: 'M 285 60 V 420', stroke: '#9ca79c', 'stroke-width': 3, 'stroke-dasharray': '5 5' }, api.svg);
-    radialReference = s('path', { class: 'two-string-horizontal-reference', fill: 'none', stroke: '#9ca79c', 'stroke-width': 1.5, 'stroke-dasharray': '4 5' }, api.svg);
-    upperString = s('path', { fill: 'none', stroke: '#ad8959', 'stroke-width': 3 }, api.svg);
-    lowerString = s('path', { fill: 'none', stroke: '#ad8959', 'stroke-width': 3 }, api.svg);
-    s('circle', { cx: 625, cy: 250, r: 95, fill: 'none', stroke: '#9ca79c', 'stroke-dasharray': '5 5' }, api.svg);
-    orbitRadius = s('path', { fill: 'none', stroke: '#ad8959', 'stroke-width': 2 }, api.svg);
-    s('circle', { cx: 625, cy: 250, r: 4, fill: '#476b60' }, api.svg);
+    s('path', { d: 'M 285 60 V 420', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-width': 3, 'stroke-dasharray': '5 5' }, api.svg);
+    radialReference = s('path', { class: 'two-string-horizontal-reference', fill: 'none', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-width': 1.5, 'stroke-dasharray': '4 5' }, api.svg);
+    upperString = s('path', { fill: 'none', stroke: 'var(--scene-warm-edge, #ad8959)', 'stroke-width': 3 }, api.svg);
+    lowerString = s('path', { fill: 'none', stroke: 'var(--scene-warm-edge, #ad8959)', 'stroke-width': 3 }, api.svg);
+    s('circle', { cx: 625, cy: 250, r: 95, fill: 'none', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-dasharray': '5 5' }, api.svg);
+    orbitRadius = s('path', { fill: 'none', stroke: 'var(--scene-warm-edge, #ad8959)', 'stroke-width': 2 }, api.svg);
+    s('circle', { cx: 625, cy: 250, r: 4, fill: 'var(--scene-edge, #476b60)' }, api.svg);
     body = mass(450, 240); topMass = mass(720, 250);
   }
   const warning = svgText(api.svg, 400, 455, '', { class: 'circular-status', 'text-anchor': 'middle' });
@@ -130,10 +130,10 @@ export function mountCircularSystem(kind, { root, lang }) {
   }
   const forceLayer = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, api.svg);
   const forceAxes = bowl ? s('g', { class: 'bowl-force-axes' }, forceLayer) : null;
-  const axisPaths = bowl ? [0, 1].map(() => s('path', { fill: 'none', stroke: '#839775', 'stroke-width': 1.3, 'stroke-dasharray': '4 5' }, forceAxes)) : [];
+  const axisPaths = bowl ? [0, 1].map(() => s('path', { fill: 'none', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 1.3, 'stroke-dasharray': '4 5' }, forceAxes)) : [];
   const axisLabels = bowl ? ['+r', '+t'].map(text => svgText(forceAxes, 0, 0, text)) : [];
   const arrows = Array.from({ length: 5 }, (_, index) => ({
-    path: s('path', { fill: 'none', stroke: index === 1 ? '#9a451b' : '#174d77', 'stroke-width': 3 }, forceLayer),
+    path: s('path', { fill: 'none', stroke: index === 1 ? 'var(--scene-force-weight, #9a451b)' : 'var(--scene-force-blue, #174d77)', 'stroke-width': 3 }, forceLayer),
     label: svgText(forceLayer, 0, 0, '', { class: 'force-label', 'text-anchor': 'middle' }),
   }));
   const geometry = geometryLayer(api.svg);

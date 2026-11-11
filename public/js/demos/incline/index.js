@@ -13,7 +13,7 @@ import { bodyAnalysis } from './analysis.js';
 export function mount({ root, lang }) {
   let params = { ...defaultParameters }, words = strings[lang], selected = false, paused = false, resolved = false, scene;
   const gravity = physicsConfig.gravity, controls = new Map();
-  const api = createExperiment({ root, lang, system: 'incline', motion: () => motionModel(time => { const state = inclineState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphInclineNote' }), duration: () => travelDuration(params, gravity), render, reset, defaults });
+  const api = createExperiment({ root, lang, showQuizForces: () => { selected = true; }, system: 'incline', motion: () => motionModel(time => { const state = inclineState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphInclineNote' }), duration: () => travelDuration(params, gravity), render, reset, defaults });
   api.svg.setAttribute('role', 'group');
   const hint = element('p', 'analysis-hint'); hint.id = 'incline-hint'; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'incline-analysis', onClose: close });
@@ -73,8 +73,8 @@ export function mount({ root, lang }) {
       width: (endX - startX) / 8 + 80,
       height: endY - (startY + (endY - startY) * i / 8) + 130,
     })));
-    s('path', { d: `M ${startX} ${startY} L ${endX} ${endY} L ${startX} ${endY} Z`, fill: '#dce3d1', stroke: '#839775', 'stroke-width': 2 }, api.svg);
-    s('line', { x1: startX, y1: startY, x2: startX + 95, y2: startY, stroke: '#8b9982', 'stroke-dasharray': '4 4' }, api.svg);
+    s('path', { class: 'incline-surface', d: `M ${startX} ${startY} L ${endX} ${endY} L ${startX} ${endY} Z`, fill: 'var(--scene-surface, #dce3d1)', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 2 }, api.svg);
+    s('line', { x1: startX, y1: startY, x2: startX + 95, y2: startY, stroke: 'var(--scene-muted, #8b9982)', 'stroke-dasharray': '4 4' }, api.svg);
     const geometry = geometryLayer(api.svg);
     if (alpha > 0) angleGuide(geometry, startX, startY, 65, 0, alpha,
       `θ = ${format(params.angle, 1)}°`, startX + 115, startY + 24);
@@ -86,13 +86,13 @@ export function mount({ root, lang }) {
     else geometryLabel(slopeAngle, endX - 70, endY + 28, 'θ = 0°');
     const block = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': 'incline-analysis', 'aria-describedby': hint.id }, api.svg);
     s('circle', { class: 'mass-hit', cy: -32, r: 64, fill: 'transparent', 'aria-hidden': 'true' }, block);
-    s('rect', { class: 'mass-body', x: -32, y: -64, width: 64, height: 64, rx: 5, fill: '#61816b' }, block);
+    s('rect', { class: 'mass-body', x: -32, y: -64, width: 64, height: 64, rx: 5, fill: 'var(--scene-green, #61816b)' }, block);
     svgText(block, 0, -26, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
     const forces = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, api.svg);
     const axes = s('g', { class: 'incline-force-axes' }, forces);
     const axisPaths = [s('path', {}, axes), s('path', {}, axes)];
     const axisLabels = [svgText(axes, 0, 0, '+x'), svgText(axes, 0, 0, '+y')];
-    const arrows = ['#9a451b', '#174d77', '#7a4e86', '#bd7126'].map(color => {
+    const arrows = ['var(--scene-force-weight, #9a451b)', 'var(--scene-force-blue, #174d77)', 'var(--scene-force-friction, #7a4e86)', 'var(--scene-force-applied, #bd7126)'].map(color => {
       const path = s('path', { stroke: color, fill: 'none', 'stroke-width': 4 }, forces);
       const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle', class: 'force-label incline-force-label' });
       return { path, label };

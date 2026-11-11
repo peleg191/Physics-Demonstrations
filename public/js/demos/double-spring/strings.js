@@ -5,9 +5,9 @@ export const strings = {
  axis: 'x is measured rightward from the midpoint. Each spring exerts −kx, so the total force is −2kx. The arrow shows their sum. At release x(0) = A = l − d and v(0) = 0.',
  approximation: 'One spring stretches while the other compresses. Both exert a force toward the midpoint: F₁ = F₂ = −kx. Their sum is −2kx.',
  conclusion: 'The effective stiffness is 2k. The period is 1/√2 times the single-spring period for the same mass and individual spring constant.' },
- he: { ...single.he, stiffness: 'קבוע כל קפיץ', caption: 'שני קפיצים זהים', title: 'משוואות שני הקפיצים', force: 'F₁ + F₂ = −2kx',
- about: 'מסה נקודתית על שולחן ללא חיכוך בין שני קפיצים אידאליים זהים המחוברים לקירות נגדיים. אורך המנוחה של כל קפיץ הוא l והמרחק בין הקירות הוא 2l. במרכז שני הקפיצים רפויים. משחררים ממנוחה בהעתק x₀ = l − d, כאשר d הוא המרחק מהקיר הימני. השרטוט סכמטי; ללא ריסון או התנגשויות.',
- axis: 'ההעתק x נמדד מהמרכז וחיובי ימינה. כל קפיץ מפעיל כוח −kx, ולכן הכוח הכולל הוא −2kx. החץ מציג את הסכום. בשחרור x(0) = A = l − d והמהירות אפס.',
+ he: { ...single.he, stiffness: 'קבוע הקפיץ של כל קפיץ', caption: 'שני קפיצים זהים', title: 'משוואות שני הקפיצים', force: 'F₁ + F₂ = −2kx',
+ about: 'גוף הנחשב למסה נקודתית מונח על שולחן חלק, בין שני קפיצים אידאליים זהים המחוברים לקירות משני צדיו. האורך הטבעי של כל קפיץ הוא l והמרחק בין הקירות הוא 2l. בנקודת שיווי המשקל שני הקפיצים באורכם הטבעי. משחררים ממנוחה בהעתק x₀ = l − d, כאשר d הוא המרחק מהקיר הימני. השרטוט סכמטי. אין ריסון או התנגשויות.',
+ axis: 'ההעתק x נמדד מנקודת שיווי המשקל שבמרכז, והכיוון החיובי הוא ימינה. כל קפיץ מפעיל כוח −kx, ולכן הכוח הכולל הוא −2kx. החץ מציג את הסכום. בשחרור x(0) = A = l − d והמהירות אפס.',
  approximation: 'קפיץ אחד נמתח והאחר מתכווץ. שניהם מפעילים כוח לעבר המרכז: F₁ = F₂ = −kx. סכום הכוחות הוא −2kx.',
  conclusion: 'קבוע הקפיץ האפקטיבי הוא 2k. זמן המחזור קטן פי √2 לעומת קפיץ יחיד עם אותה מסה ואותו קבוע קפיץ.' }
 };

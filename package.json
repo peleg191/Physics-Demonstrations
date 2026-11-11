@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "python3 scripts/serve.py",
     "test": "node --test tests/*.test.js && python3 -m unittest discover -s tests -p '*_test.py'",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "test:browser": "python3 scripts/test_quiz_browser.py",
+    "test:canvas": "python3 scripts/test_canvas_browser.py"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }

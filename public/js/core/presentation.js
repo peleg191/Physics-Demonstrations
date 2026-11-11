@@ -5,6 +5,7 @@ export function resolveIllustrationStyle(search = '', fallback = presentationCon
   const requested = new URLSearchParams(search).get('style');
   return (requested || fallback) === 'notebook' ? 'notebook' : 'current';
 }
-export function illustrationSource(source, style) {
-  return style === 'notebook' ? source.replace(/([^/]+)\.svg$/, 'notebook/$1.svg') : source;
+export function illustrationSource(source, style, theme = 'light') {
+  const illustration = style === 'notebook' ? source.replace(/([^/]+)\.svg$/, 'notebook/$1.svg') : source;
+  return theme === 'dark' ? illustration.replace(/([^/]+)\.svg$/, 'dark/$1.svg') : illustration;
 }

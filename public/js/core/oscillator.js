@@ -17,7 +17,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   const controls = new Map();
   let drag = null, suppressClick = false;
   const amplitudeSpec = specs.find(spec => spec.key === 'amplitude');
-  const api = createExperiment({ root, lang, system: kind, ignoreSceneClick: () => suppressClick, motion: () => motionModel(time => { const state = oscillatorState(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; }, { angular: pendulum, note: pendulum ? 'graphAngularNote' : 'graphNote' }), duration: () => duration(params, gravity), render, reset, defaults });
+  const api = createExperiment({ root, lang, showQuizForces: () => { selected = true; }, system: kind, ignoreSceneClick: () => suppressClick, motion: () => motionModel(time => { const state = oscillatorState(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; }, { angular: pendulum, note: pendulum ? 'graphAngularNote' : 'graphNote' }), duration: () => duration(params, gravity), render, reset, defaults });
   api.svg.setAttribute('role', 'group');
   const hint = element('p', 'analysis-hint'); hint.id = `${kind}-hint`; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: `${kind}-analysis`, onClose: close });
@@ -56,7 +56,9 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     const y = pendulum ? 100 + params.length * 95 * Math.cos(state.position) : 320;
     drag = { id: event.pointerId, startX: event.clientX, startY: event.clientY,
       offsetX: point.x - x, offsetY: point.y - y, amplitude: params.amplitude, playing: api.clock.playing, moved: false };
-    api.svg.setPointerCapture(event.pointerId);
+    // Capture on the body so a press without dragging still clicks the body.
+    // Capturing on the SVG retargets that click to the background instead.
+    scene.body.setPointerCapture(event.pointerId);
   }, { signal: api.signal });
   api.svg.addEventListener('pointermove', event => {
     if (!drag || event.pointerId !== drag.id) return;
@@ -78,7 +80,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     if (!drag || event.pointerId !== drag.id) return;
     const finished = drag; drag = null;
     scene.body.style.cursor = 'grab';
-    if (api.svg.hasPointerCapture(finished.id)) api.svg.releasePointerCapture(finished.id);
+    if (scene.body.hasPointerCapture(finished.id)) scene.body.releasePointerCapture(finished.id);
     if (!finished.moved) return;
     suppressClick = true;
     if (event.type !== 'pointerup') {
@@ -91,19 +93,19 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) api.svg.addEventListener(type, finishDrag, { signal: api.signal });
   function buildScene() {
     const svg = api.svg;
-    s('path', { d: pendulum ? 'M 300 80 H 500 M 400 80 V 100' : 'M 115 180 V 350 H 700', stroke: '#839775', 'stroke-width': 4, fill: 'none' }, svg);
-    if (dual) s('path', { d: 'M 685 180 V 350', stroke: '#839775', 'stroke-width': 4 }, svg);
-    const secondConnector = dual ? s('path', { fill: 'none', stroke: '#6f8e65', 'stroke-width': 3 }, svg) : null;
-    const reference = s('line', { x1: 400, x2: 400, y1: pendulum ? 100 : 230, y2: pendulum ? 410 : 375, stroke: '#9caa91', 'stroke-dasharray': '5 6' }, svg);
-    const connector = s('path', { fill: 'none', stroke: pendulum ? '#ad8959' : '#6f8e65', 'stroke-width': 3 }, svg);
+    s('path', { d: pendulum ? 'M 300 80 H 500 M 400 80 V 100' : 'M 115 180 V 350 H 700', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 4, fill: 'none' }, svg);
+    if (dual) s('path', { d: 'M 685 180 V 350', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 4 }, svg);
+    const secondConnector = dual ? s('path', { fill: 'none', stroke: 'var(--scene-green, #6f8e65)', 'stroke-width': 3 }, svg) : null;
+    const reference = s('line', { x1: 400, x2: 400, y1: pendulum ? 100 : 230, y2: pendulum ? 410 : 375, stroke: 'var(--scene-muted, #9caa91)', 'stroke-dasharray': '5 6' }, svg);
+    const connector = s('path', { fill: 'none', stroke: pendulum ? 'var(--scene-warm-edge, #ad8959)' : 'var(--scene-green, #6f8e65)', 'stroke-width': 3 }, svg);
     const body = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': `${kind}-analysis`, 'aria-describedby': hint.id }, svg);
     body.style.touchAction = 'none'; body.style.cursor = 'grab';
     s('circle', { class: 'mass-hit', r: 64, fill: 'transparent', 'aria-hidden': 'true' }, body);
-    if (pendulum) s('circle', { class: 'mass-body', r: 19, fill: '#c38e60' }, body);
-    else s('rect', { class: 'mass-body', x: -30, y: -30, width: 60, height: 60, rx: 7, fill: '#61816b' }, body);
+    if (pendulum) s('circle', { class: 'mass-body', r: 19, fill: 'var(--scene-warm, #c38e60)' }, body);
+    else s('rect', { class: 'mass-body', x: -30, y: -30, width: 60, height: 60, rx: 7, fill: 'var(--scene-green, #61816b)' }, body);
     svgText(body, 0, 6, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
     const forces = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, svg);
-    const force = s('path', { fill: 'none', stroke: '#9a451b', 'stroke-width': 4 }, forces);
+    const force = s('path', { fill: 'none', stroke: 'var(--scene-force-weight, #9a451b)', 'stroke-width': 4 }, forces);
     const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle', class: 'force-label' });
     const geometry = geometryLayer(svg);
     prepareSketchOutlines(api.svg);

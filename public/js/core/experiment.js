@@ -21,7 +21,7 @@ function labelTransport(control, label, icon) {
   control.replaceChildren(svg, element('span', '', label));
 }
 // Shared shell; only a demo knows its physical model, drawing and duration.
-export function createExperiment({ root, lang, system, duration, render, reset, defaults, motion, ignoreSceneClick = () => false, viewBox = '0 0 800 480', mobileViewBox = viewBox }) {
+export function createExperiment({ root, lang, system, duration, render, reset, defaults, motion, showQuizForces = () => {}, ignoreSceneClick = () => false, viewBox = '0 0 800 480', mobileViewBox = viewBox }) {
   const controller = new AbortController(); const { signal } = controller;
   let currentLang = lang, t = translator(lang), statusKey = 'ready';
   const layout = element('div', 'experiment-layout');
@@ -56,7 +56,41 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
   const panel = element('aside', 'control-panel');
   const panelTitle = element('h2', '', t('parameters')); const panelNote = element('p', 'panel-note', t('parametersNote'));
   const parameters = element('div', 'parameters');
-  const quiz = system ? createQuiz({ system, lang, signal }) : null;
+  let pendingQuizObservation = null;
+  function runQuizExperiment(values, observed, { fraction = 1, onProgress = () => {}, onCancel = () => {} } = {}) {
+    function findInput(node, id) {
+      if (node.id === id && node.type === 'number') return node;
+      for (const child of node.children) { const found = findInput(child, id); if (found) return found; }
+      return null;
+    }
+    // Resolve every control before changing anything, so invalid authored presets
+    // cannot silently run a different experiment.
+    const inputs = Object.entries(values).map(([key, value]) => {
+      const input = findInput(parameters, `${system}-${key}`);
+      if (!input || !Number.isFinite(value) || value < Number(input.min) || value > Number(input.max)) throw new Error(`Invalid quiz experiment parameter: ${system}-${key}`);
+      return [input, value];
+    });
+    pendingQuizObservation = null;
+    defaults();
+    for (const [input, value] of inputs) { input.value = String(value); input.dispatchEvent(new Event('change', { bubbles: true })); }
+    clock.reset();
+    if (!(duration() > 0) || !Number.isFinite(duration())) throw new Error('Quiz experiment has no valid observation interval');
+    const snapshot = [];
+    function capture(node) {
+      if (node.type === 'number') snapshot.push([node, node.value]);
+      for (const child of node.children) capture(child);
+    }
+    capture(parameters);
+    pendingQuizObservation = { observed, after: duration() * Math.max(0.01, Math.min(1, fraction)), onProgress, onCancel, snapshot };
+    // Enable the body force display after presets and resets, without pausing playback.
+    showQuizForces();
+    clock.play();
+  }
+  const quiz = system ? createQuiz({ system, lang, signal, runExperiment: runQuizExperiment,
+    pauseExperiment: (cancel = false) => { if (cancel) pendingQuizObservation = null; clock.pause(); }, resumeExperiment: () => clock.play(),
+    observationParent: stageColumn, observationBefore: rateWrap,
+    showObservationScene() { stage.scrollIntoView?.({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); },
+  }) : null;
   const defaultButton = button(t('defaults'), 'text-button');
   const resetNote = element('p', 'reset-note', t('defaultNote'));
   const assumptions = element('details', 'model-notes'); const summary = element('summary', '', t('assumptions')); const modelText = element('p');
@@ -89,6 +123,19 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
     step.disabled = clock.ended;
     render(time, { updateReadouts });
     graphs?.update(time, time === 0 && !playing && !frame?.seeking);
+    if (pendingQuizObservation) {
+      const observation = pendingQuizObservation;
+      if (observation.snapshot.some(([input, value]) => input.value !== value)) {
+        pendingQuizObservation = null; observation.onCancel();
+      } else {
+        observation.onProgress(Math.min(1, time / observation.after), playing);
+        if (time >= observation.after) {
+          pendingQuizObservation = null;
+          clock.seek(observation.after);
+          observation.observed({ elapsed: observation.after });
+        }
+      }
+    }
   } });
   let sceneObstacles = [], obstacleSignature = '';
   function graphObstacles() {

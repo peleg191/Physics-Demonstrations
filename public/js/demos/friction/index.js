@@ -17,7 +17,7 @@ export function mountSystem(kind, { root, lang }) {
   let params = { ...defaults[kind] }, words = strings[lang], selected = null, paused = false;
   const g = physicsConfig.gravity, controls = new Map();
   const system = `friction-${kind}`;
-  const api = createExperiment({ root, lang, system, viewBox: '0 0 640 450', mobileViewBox: '0 -90 640 540',
+  const api = createExperiment({ root, lang, showQuizForces: () => { selected = 0; }, system, viewBox: '0 0 640 450', mobileViewBox: '0 -90 640 540',
     duration: () => endTime(kind, params, g), render, reset, defaults: restore,
     motion: () => motionModel(time => {
       const state = sample(kind, params, time, g);
@@ -109,18 +109,18 @@ export function mountSystem(kind, { root, lang }) {
     } };
   }
   const scene = s('g', { class: 'friction-scene' }, api.svg);
-  const ground = s('path', { class: 'friction-ground', fill: '#e5e7d9', stroke: '#61816b', 'stroke-width': 3, 'stroke-linejoin': 'round' }, scene);
-  const support = s('path', { fill: 'none', stroke: '#9ca79c', 'stroke-width': 3, 'stroke-linecap': 'round' }, scene);
+  const ground = s('path', { class: 'friction-ground', fill: 'var(--scene-surface, #e5e7d9)', stroke: 'var(--scene-green, #61816b)', 'stroke-width': 3, 'stroke-linejoin': 'round' }, scene);
+  const support = s('path', { fill: 'none', stroke: 'var(--scene-muted, #9ca79c)', 'stroke-width': 3, 'stroke-linecap': 'round' }, scene);
   const wheel = s('g', { class: 'friction-wheel' }, scene);
-  const pulley = s('circle', { r: 16, fill: '#e8d3b6', stroke: '#775c45', 'stroke-width': 2 }, wheel);
-  const rim = s('circle', { r: 12, fill: 'none', stroke: '#b59a79', 'stroke-width': 1.5 }, wheel);
-  const axle = s('circle', { r: 3.5, fill: '#775c45' }, wheel);
+  const pulley = s('circle', { r: 16, fill: 'var(--scene-warm, #e8d3b6)', stroke: 'var(--scene-warm-edge, #775c45)', 'stroke-width': 2 }, wheel);
+  const rim = s('circle', { r: 12, fill: 'none', stroke: 'var(--scene-warm-edge, #b59a79)', 'stroke-width': 1.5 }, wheel);
+  const axle = s('circle', { r: 3.5, fill: 'var(--scene-warm-edge, #775c45)' }, wheel);
   // Draw the rope over the rim, with one exact circular arc between tangencies.
-  const rope = s('path', { class: 'friction-rope', fill: 'none', stroke: '#775c45', 'stroke-width': 2.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, scene);
+  const rope = s('path', { class: 'friction-rope', fill: 'none', stroke: 'var(--scene-warm-edge, #775c45)', 'stroke-width': 2.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, scene);
   const bodies = [0, 1].map((_, index) => {
     const group = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'data-body': index,
       'aria-controls': `${system}-analysis`, 'aria-describedby': hint.id }, scene);
-    s('rect', { class: 'mass-body', x: -32, y: -25, width: 64, height: 50, rx: 5, fill: index ? '#d3a374' : '#a9bca0', stroke: '#3c5e49', 'stroke-width': 2 }, group);
+    s('rect', { class: 'mass-body', x: -32, y: -25, width: 64, height: 50, rx: 5, fill: index ? 'var(--scene-warm, #d3a374)' : 'var(--scene-green, #a9bca0)', stroke: 'var(--scene-edge, #3c5e49)', 'stroke-width': 2 }, group);
     const label = canvasMath(group, 'friction-body-label', 60, 40);
     label.update(kind === 'stacked' ? 'm' : `m_${index + 1}`, 0, 0);
     group.addEventListener('click', () => select(index), { signal: api.signal });
@@ -129,22 +129,22 @@ export function mountSystem(kind, { root, lang }) {
     }, { signal: api.signal });
     return group;
   });
-  const roughness = s('path', { class: 'friction-surface-hatching', fill: 'none', stroke: '#61816b', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'pointer-events': 'none' }, scene);
-  const applied = s('path', { fill: 'none', stroke: '#b77820', 'stroke-width': 3 }, scene);
+  const roughness = s('path', { class: 'friction-surface-hatching', fill: 'none', stroke: 'var(--scene-green, #61816b)', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'pointer-events': 'none' }, scene);
+  const applied = s('path', { fill: 'none', stroke: 'var(--scene-force-applied, #b77820)', 'stroke-width': 3 }, scene);
   const appliedLabel = canvasMath(scene, 'friction-applied-label', 110);
-  const angleArc = s('path', { class: 'friction-angle', fill: 'none', stroke: '#9a642e', 'stroke-width': 2 }, scene);
+  const angleArc = s('path', { class: 'friction-angle', fill: 'none', stroke: 'var(--scene-force-applied, #9a642e)', 'stroke-width': 2 }, scene);
   const angleLabel = canvasMath(scene, 'friction-angle-label', 110);
   const coefficientLabel = canvasMath(scene, 'friction-coefficient-label', 200);
   const slidingCoefficient = canvasMath(scene, 'friction-coefficient-label', 200);
   const floorCoefficient = canvasMath(scene, 'friction-coefficient-label', 160);
   slidingCoefficient.box.setAttribute('display', kind === 'stacked' ? 'inline' : 'none');
   floorCoefficient.box.setAttribute('display', kind === 'stacked' ? 'inline' : 'none');
-  const slipMark = s('path', { class: 'friction-slip-marker', fill: 'none', stroke: '#994e94', 'stroke-width': 2, display: 'none' }, scene);
+  const slipMark = s('path', { class: 'friction-slip-marker', fill: 'none', stroke: 'var(--scene-force-friction, #994e94)', 'stroke-width': 2, display: 'none' }, scene);
   const slipLabel = canvasMath(scene, 'friction-slip-label', 200);
   const detached = s('g', { class: 'friction-detached-context', 'pointer-events': 'none', 'aria-hidden': 'true', display: 'none' }, api.svg);
-  const connector = s('path', { fill: 'none', stroke: '#839775', 'stroke-width': 1.5, 'stroke-dasharray': '4 5' }, detached);
+  const connector = s('path', { fill: 'none', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 1.5, 'stroke-dasharray': '4 5' }, detached);
   const diagramBody = s('g', {}, detached);
-  s('rect', { x: -26, y: -20, width: 52, height: 40, rx: 4, fill: '#d3a374', 'fill-opacity': 0.35, stroke: '#775c45', 'stroke-width': 1.5 }, diagramBody);
+  s('rect', { x: -26, y: -20, width: 52, height: 40, rx: 4, fill: 'var(--scene-warm, #d3a374)', 'fill-opacity': 0.35, stroke: 'var(--scene-warm-edge, #775c45)', 'stroke-width': 1.5 }, diagramBody);
   const overlay = s('g', { class: 'canvas-forces friction-forces', 'pointer-events': 'none', 'aria-hidden': 'true', display: 'none' }, api.svg);
   const arrows = Array.from({ length: 6 }, () => {
     const group = s('g', {}, overlay);

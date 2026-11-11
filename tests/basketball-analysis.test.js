@@ -111,7 +111,7 @@ test('optional trail samples equal simulated times and follows playback, reset a
     assert.ok(Math.abs((xs[2] - xs[1]) - (xs[1] - xs[0])) < 1e-9);
     assert.ok(ys[2] - 2 * ys[1] + ys[0] > 0);
     demo.setLanguage('he'); assert.equal(visible().length, 4);
-    assert.match(toggle.parentNode.textContent, /עקבות/);
+    assert.match(toggle.parentNode.textContent, /סימון מיקום הכדור/);
     toggle.checked = false; toggle.dispatchEvent(new Event('change')); assert.equal(visible().length, 0);
     toggle.checked = true; toggle.dispatchEvent(new Event('change'));
     demo.reset(); assert.equal(visible().length, 1);

@@ -5,16 +5,16 @@ export const identifier = name => ['mi', name];
 export const subscript = (base, ...indices) => ['msub', base, row(...indices)];
 export const power = (base, exponent) => ['msup', base, ['mn', String(exponent)]];
 export const trig = (name, argument, exponent) => row(exponent === undefined ? ['mi', { mathvariant: 'normal' }, name] : power(['mi', { mathvariant: 'normal' }, name], exponent), ['mo', '⁡'], argument);
-const subscripts = { '₁': '1', '₂': '2', 'ᵧ': 'y' };
+const subscripts = { '₁': '1', '₂': '2', 'ᵧ': 'y', 'ₛ': 's', 'ₖ': 'k' };
 const superscripts = { '²': '2' };
 export function expression(text) {
   const parts = [];
-  for (const token of text.match(/\d+(?:\.\d+)?|kg|[₁₂ᵧ²]|[^\s]/gu) || []) {
+  for (const token of text.match(/\d+(?:\.\d+)?|kg|[₁₂ᵧₛₖ²]|[^\s]/gu) || []) {
     if (subscripts[token] || superscripts[token]) {
       const base = parts.pop();
-      parts.push([subscripts[token] ? 'msub' : 'msup', base, [token === 'ᵧ' ? 'mi' : 'mn', subscripts[token] || superscripts[token]]]);
+      parts.push([subscripts[token] ? 'msub' : 'msup', base, [subscripts[token] && /[a-z]/.test(subscripts[token]) ? 'mi' : 'mn', subscripts[token] || superscripts[token]]]);
     } else {
-      const tag = /^\d/.test(token) ? 'mn' : token === 'kg' || token === 'N' ? 'mtext' : /^[A-Za-z]$/.test(token) ? 'mi' : 'mo';
+      const tag = /^\d/.test(token) ? 'mn' : token === 'kg' || token === 'N' ? 'mtext' : /^[A-Za-z\p{Script=Greek}]$/u.test(token) ? 'mi' : 'mo';
       parts.push([tag, token]);
     }
   }

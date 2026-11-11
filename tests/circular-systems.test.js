@@ -246,7 +246,7 @@ test('bowl worked solution uses zero height at A and substitutes the values at A
       near(potentialAtA, -state.weight * defaults['energy-bowl'].radius * Math.cos(state.theta));
       near(state.kinetic + potentialAtA, 0);
     }
-    demo.setLanguage('he'); assert.match(panel.textContent, /בשפה A/); assert.match(panel.textContent, /פתרון בנקודות/);
+    demo.setLanguage('he'); assert.match(panel.textContent, /שפת הקערה A כגובה אפס/); assert.match(panel.textContent, /פתרון בנקודות/);
   } finally { demo?.dispose(); fixture.cleanup(); }
 });
 

@@ -12,7 +12,7 @@ import { bodyAnalysis } from './analysis.js';
 export function mount({ root, lang }) {
   let params = { ...defaultParameters }, words = strings[lang], scene;
   const gravity = physicsConfig.gravity; const controls = new Map();
-  const api = createExperiment({ root, lang, system: 'pulley', motion: () => motionModel(time => { const state = pulleyState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphPulleyNote' }), duration: () => travelDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '200 0 400 500' });
+  const api = createExperiment({ root, lang, showQuizForces: () => { selected = 'mass1'; }, system: 'pulley', motion: () => motionModel(time => { const state = pulleyState(params, time, gravity); return [[state.displacement], [state.velocity], [state.acceleration]]; }, { note: 'graphPulleyNote' }), duration: () => travelDuration(params, gravity), render, reset: () => reset(), defaults, viewBox: '200 0 400 500' });
   let selected = null, pausedForAnalysis = false;
   const hint = element('p', 'analysis-hint'); hint.id = 'pulley-selection-hint'; api.stageColumn.append(hint);
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: 'pulley-analysis', onClose: closeAnalysis });
@@ -46,20 +46,20 @@ export function mount({ root, lang }) {
   function buildScene() {
     const svg = api.svg;
     const defs = s('defs', {}, svg); const pattern = s('pattern', { id: 'pulley-grid', width: 30, height: 30, patternUnits: 'userSpaceOnUse' }, defs);
-    s('circle', { cx: 1, cy: 1, r: .8, fill: '#c5cfbc', opacity: .7 }, pattern);
+    s('circle', { cx: 1, cy: 1, r: .8, fill: 'var(--scene-dots, #c5cfbc)', opacity: .7 }, pattern);
     s('rect', { width: 800, y: -20, height: 560, fill: 'url(#pulley-grid)' }, svg);
-    s('path', { d: 'M 320 72 H 480 M 400 72 V 115', stroke: '#8d9f80', 'stroke-width': 4, fill: 'none' }, svg);
-    for (let x = 325; x < 480; x += 15) s('path', { d: `M ${x} 72 l 9 -9`, stroke: '#8d9f80', 'stroke-width': 1.5 }, svg);
-    s('circle', { cx: 400, cy: 156, r: 68, fill: '#d6dfcb', stroke: '#96a987', 'stroke-width': 2 }, svg);
+    s('path', { d: 'M 320 72 H 480 M 400 72 V 115', stroke: 'var(--scene-structure, #8d9f80)', 'stroke-width': 4, fill: 'none' }, svg);
+    for (let x = 325; x < 480; x += 15) s('path', { d: `M ${x} 72 l 9 -9`, stroke: 'var(--scene-structure, #8d9f80)', 'stroke-width': 1.5 }, svg);
+    s('circle', { cx: 400, cy: 156, r: 68, fill: 'var(--scene-surface, #d6dfcb)', stroke: 'var(--scene-structure, #96a987)', 'stroke-width': 2 }, svg);
     const wheel = s('g', {}, svg);
-    s('circle', { cx: 400, cy: 156, r: 52, fill: '#e8eddf', stroke: '#adbd9d', 'stroke-width': 1.5 }, wheel);
-    for (let angle = 0; angle < 360; angle += 60) s('path', { d: 'M 400 146 V 107', stroke: '#bfccb0', 'stroke-width': 2, transform: `rotate(${angle} 400 156)` }, wheel);
-    s('circle', { cx: 400, cy: 156, r: 8, fill: '#829576', stroke: '#718568' }, svg);
-    const rope = s('path', { stroke: '#b7925e', 'stroke-width': 3, fill: 'none' }, svg);
-    const left = mass('#61816b', 'm₁', 'mass1'); const right = mass('#c38e60', 'm₂', 'mass2');
+    s('circle', { cx: 400, cy: 156, r: 52, fill: 'var(--scene-surface-inset, #e8eddf)', stroke: 'var(--scene-structure, #adbd9d)', 'stroke-width': 1.5 }, wheel);
+    for (let angle = 0; angle < 360; angle += 60) s('path', { d: 'M 400 146 V 107', stroke: 'var(--scene-structure, #bfccb0)', 'stroke-width': 2, transform: `rotate(${angle} 400 156)` }, wheel);
+    s('circle', { cx: 400, cy: 156, r: 8, fill: 'var(--scene-structure, #829576)', stroke: 'var(--scene-structure, #718568)' }, svg);
+    const rope = s('path', { stroke: 'var(--scene-warm-edge, #b7925e)', 'stroke-width': 3, fill: 'none' }, svg);
+    const left = mass('var(--scene-green, #61816b)', 'm₁', 'mass1'); const right = mass('var(--scene-warm, #c38e60)', 'm₂', 'mass2');
     const initial = 300;
-    for (const x of [330, 470]) s('line', { x1: x - 48, x2: x + 48, y1: initial, y2: initial, stroke: '#a5b29b', 'stroke-dasharray': '3 5', opacity: .6 }, svg);
-    s('line', { x1: 220, x2: 580, y1: 446, y2: 446, stroke: '#b8c3aa' }, svg);
+    for (const x of [330, 470]) s('line', { x1: x - 48, x2: x + 48, y1: initial, y2: initial, stroke: 'var(--scene-muted, #a5b29b)', 'stroke-dasharray': '3 5', opacity: .6 }, svg);
+    s('line', { x1: 220, x2: 580, y1: 446, y2: 446, stroke: 'var(--scene-muted, #b8c3aa)' }, svg);
     const forces = s('g', { class: 'canvas-forces', role: 'img', display: 'none', 'pointer-events': 'none' }, svg);
     const arrows = [-1, 1].map(direction => {
       const group = s('g', {}, forces);
@@ -116,7 +116,7 @@ export function mount({ root, lang }) {
         const { shaft, head, label } = scene.arrows[index];
         const start = index === 0 ? 0 : 55, length = force.magnitude * data.pixelsPerNewton;
         const end = start + force.direction * length, arrowHead = Math.min(13, length / 2);
-        const halfWidth = Math.min(8, length / 3), color = index === 0 ? '#174d77' : '#9a451b';
+        const halfWidth = Math.min(8, length / 3), color = index === 0 ? 'var(--scene-force-blue, #174d77)' : 'var(--scene-force-weight, #9a451b)';
         shaft.setAttribute('y1', start); shaft.setAttribute('y2', end); shaft.setAttribute('stroke', color);
         head.setAttribute('d', `M 0 ${end} L ${-halfWidth} ${end - force.direction * arrowHead} H ${halfWidth} Z`);
         head.setAttribute('fill', color);

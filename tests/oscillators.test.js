@@ -67,18 +67,27 @@ for (const name of ['spring', 'double-spring', 'pendulum']) {
       const body = fixture.find(n => n.getAttribute('class') === 'selectable-mass');
       const input = fixture.find(n => n.id === `${name}-amplitude`);
       const panel = fixture.find(n => n.id === `${name}-analysis`);
-      let capture = null;
+      let capture = null, clickTarget = body;
       svg.getScreenCTM = () => ({ inverse: () => ({}) });
       svg.createSVGPoint = () => ({ x: 0, y: 0, matrixTransform() { return { x: this.x, y: this.y }; } });
-      svg.setPointerCapture = id => { capture = id; };
-      svg.hasPointerCapture = id => capture === id;
-      svg.releasePointerCapture = () => { capture = null; };
+      for (const node of [svg, body]) {
+        node.setPointerCapture = id => { capture = id; clickTarget = node; };
+        node.hasPointerCapture = id => capture === id && clickTarget === node;
+        node.releasePointerCapture = () => { capture = null; };
+      }
       function pointer(type, x, y, id = 1) {
         const event = new Event(type, { cancelable: true });
         Object.defineProperties(event, { target: { value: body }, button: { value: 0 }, pointerId: { value: id }, clientX: { value: x }, clientY: { value: y } });
         svg.dispatchEvent(event);
       }
+      const click = (target = clickTarget) => { const event = new Event('click'); Object.defineProperty(event, 'target', { value: target }); svg.dispatchEvent(event); };
       const [x, y] = body.getAttribute('transform').match(/-?\d+(?:\.\d+)?/g).map(Number);
+      pointer('pointerdown', x, y);
+      pointer('pointerup', x, y);
+      click();
+      assert.equal(panel.hidden, false, 'A captured press without movement must open the equations');
+      click(svg);
+      assert.equal(panel.hidden, true);
       pointer('pointerdown', x, y);
       pointer('pointermove', -1000, y, 2); // A different pointer cannot move the mass.
       assert.equal(Number(input.value), name === 'pendulum' ? 10 : 0.6);
@@ -88,8 +97,7 @@ for (const name of ['spring', 'double-spring', 'pendulum']) {
       pointer('pointerup', -1000, y);
       assert.equal(capture, null);
       assert.equal(fixture.frames.size, 1);
-      const click = (target = body) => { const event = new Event('click'); Object.defineProperty(event, 'target', { value: target }); svg.dispatchEvent(event); };
-      click(svg); assert.equal(fixture.frames.size, 1);
+      click(); assert.equal(fixture.frames.size, 1);
       assert.equal(panel.hidden, true); // Release must not open the equations.
       const releasedPosition = body.getAttribute('transform');
       fixture.frame(0); fixture.frame(100);
@@ -102,7 +110,7 @@ for (const name of ['spring', 'double-spring', 'pendulum']) {
       assert.equal(Number(input.value), name === 'pendulum' ? -15 : -1);
       input.value = '0'; input.dispatchEvent(new Event('change'));
       assert.doesNotMatch(svg.textContent, /NaN/);
-      const force = fixture.find(n => n.tagName === 'path' && n.getAttribute('stroke') === '#9a451b');
+      const force = fixture.find(n => n.tagName === 'path' && n.getAttribute('stroke') === 'var(--scene-force-weight, #9a451b)');
       assert.doesNotMatch(force.getAttribute('d'), /NaN|Infinity/);
     } finally { demo?.dispose(); fixture.cleanup(); }
   });

@@ -27,7 +27,9 @@ export function browserFixture() {
   document.hidden = false;
   let next = 0; const frames = new Map();
   const saved = new Map();
-  for (const [key, value] of Object.entries({ document, matchMedia: () => ({ matches: false }), requestAnimationFrame: fn => { frames.set(++next, fn); return next; }, cancelAnimationFrame: id => frames.delete(id) })) {
+  const values = new Map();
+  const localStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), removeItem: key => values.delete(key), clear: () => values.clear() };
+  for (const [key, value] of Object.entries({ document, localStorage, matchMedia: () => ({ matches: false }), requestAnimationFrame: fn => { frames.set(++next, fn); return next; }, cancelAnimationFrame: id => frames.delete(id) })) {
     saved.set(key, globalThis[key]); globalThis[key] = value;
   }
   const root = document.createElement('main');

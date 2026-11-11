@@ -16,7 +16,7 @@ export function mount({ root, lang }) {
   const showTrail = config.carouselConfig?.showTrail ?? true;
   let params = { ...defaultParameters }, words = strings[lang], selected = false, paused = false, ready = false;
   const controls = new Map();
-  const api = createExperiment({ root, lang, system: 'carousel', duration: () => duration(params, gravity), render, reset, defaults,
+  const api = createExperiment({ root, lang, showQuizForces: () => { selected = true; }, system: 'carousel', duration: () => duration(params, gravity), render, reset, defaults,
     motion: () => motionModel(time => { const state = carouselState(params, time, gravity); return [state.position, state.velocity, state.accelerations]; }, { components: ['graphCarouselX', 'graphCarouselY'], note: 'graphCarouselNote' }) });
   api.svg.setAttribute('role', 'group');
   const hint = element('p', 'analysis-hint'); hint.id = 'carousel-hint'; api.stageColumn.append(hint);
@@ -35,29 +35,29 @@ export function mount({ root, lang }) {
   for (const reading of readings) api.metrics.append(reading.root);
   const sideLabel = svgText(api.svg, 215, 45, '', { 'text-anchor': 'middle' });
   const topLabel = svgText(api.svg, 590, 45, '', { 'text-anchor': 'middle' });
-  s('path', { d: 'M 135 90 H 295 M 215 90 V 405', stroke: '#839775', 'stroke-width': 3, 'stroke-dasharray': '5 5', fill: 'none' }, api.svg);
-  const orbit = s('line', { x1: 90, y1: 350, x2: 340, y2: 350, fill: 'none', stroke: '#839775', 'stroke-dasharray': '5 5' }, api.svg);
-  const trailLayer = s('g', { class: 'carousel-side-trail', fill: 'none', stroke: '#c38e60', 'stroke-linecap': 'round', 'pointer-events': 'none', 'aria-hidden': 'true' }, api.svg);
+  s('path', { d: 'M 135 90 H 295 M 215 90 V 405', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 3, 'stroke-dasharray': '5 5', fill: 'none' }, api.svg);
+  const orbit = s('line', { x1: 90, y1: 350, x2: 340, y2: 350, fill: 'none', stroke: 'var(--scene-structure, #839775)', 'stroke-dasharray': '5 5' }, api.svg);
+  const trailLayer = s('g', { class: 'carousel-side-trail', fill: 'none', stroke: 'var(--scene-warm, #c38e60)', 'stroke-linecap': 'round', 'pointer-events': 'none', 'aria-hidden': 'true' }, api.svg);
   const trailSegments = Array.from({ length: 32 }, () => s('path', { class: 'carousel-trail-segment' }, trailLayer));
   const trailPencilLayer = s('g', { class: 'carousel-trail-pencil' }, trailLayer);
   const trailEdges = trailSegments.map(() => s('path', {}, trailPencilLayer));
-  const string = s('path', { stroke: '#ad8959', 'stroke-width': 3, fill: 'none' }, api.svg);
-  s('circle', { cx: 590, cy: 250, r: 125, fill: 'none', stroke: '#839775', 'stroke-dasharray': '5 5' }, api.svg);
-  s('circle', { cx: 590, cy: 250, r: 4, fill: '#61816b' }, api.svg);
-  const radius = s('path', { stroke: '#ad8959', 'stroke-width': 2, fill: 'none' }, api.svg);
+  const string = s('path', { stroke: 'var(--scene-warm-edge, #ad8959)', 'stroke-width': 3, fill: 'none' }, api.svg);
+  s('circle', { cx: 590, cy: 250, r: 125, fill: 'none', stroke: 'var(--scene-structure, #839775)', 'stroke-dasharray': '5 5' }, api.svg);
+  s('circle', { cx: 590, cy: 250, r: 4, fill: 'var(--scene-green, #61816b)' }, api.svg);
+  const radius = s('path', { stroke: 'var(--scene-warm-edge, #ad8959)', 'stroke-width': 2, fill: 'none' }, api.svg);
   const balls = [0, 1].map(() => {
     const ball = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': 'carousel-analysis', 'aria-describedby': hint.id }, api.svg);
     s('circle', { class: 'mass-hit', r: 32, fill: 'transparent' }, ball);
     const artwork = s('g', { class: 'carousel-ball-art' }, ball);
-    s('circle', { class: 'mass-body', r: 17, fill: '#c38e60' }, artwork);
-    svgText(artwork, 0, 5, 'm', { 'text-anchor': 'middle' });
+    s('circle', { class: 'mass-body', r: 17, fill: 'var(--scene-warm, #c38e60)' }, artwork);
+    svgText(artwork, 0, 5, 'm', { class: 'carousel-mass-label', 'text-anchor': 'middle' });
     ball.addEventListener('click', select, { signal: api.signal });
     ball.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(); } }, { signal: api.signal });
     return ball;
   });
   const sideArtwork = balls[0].children[1];
   const forceLayer = s('g', { 'pointer-events': 'none' }, api.svg);
-  const arrows = ['#174d77', '#9a451b', '#174d77', '#61816b'].map(color => s('path', { stroke: color, 'stroke-width': 3, fill: 'none' }, forceLayer));
+  const arrows = ['var(--scene-force-blue, #174d77)', 'var(--scene-force-weight, #9a451b)', 'var(--scene-force-blue, #174d77)', 'var(--scene-green, #61816b)'].map(color => s('path', { stroke: color, 'stroke-width': 3, fill: 'none' }, forceLayer));
   const labels = ['T', 'mg', 'T sin α', 'v'].map(label => svgText(forceLayer, 0, 0, label, { 'text-anchor': 'middle' }));
   const initialGeometry = geometryLayer(api.svg);
   let geometrySignature = '';

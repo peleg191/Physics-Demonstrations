@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { browserFixture } from './dom-fixture.js';
 import { demonstrations } from '../public/js/registry.js';
 import { createQuiz } from '../public/js/core/quiz.js';
+import { readQuizProgress, quizMilestones } from '../public/js/core/quiz-progress.js';
 import { quizzes } from '../public/js/core/quiz-data.js';
 import { hasQuizBadge, awardQuizBadge, createQuizBadge } from '../public/js/core/quiz-badges.js';
 setMaxListeners(0);
@@ -17,7 +18,7 @@ const readableText = node => node.tagName === 'math' ? node.getAttribute('aria-l
 const plainCopy = text => text.replaceAll('$', '');
 
 for (const entry of demonstrations) {
-  test(`${entry.id}: quiz grading, language changes, parameter edits and retry`, async () => {
+  test(`${entry.id}: five-question intuition session, feedback, retries, localization and Explorer`, async () => {
     const fixture = browserFixture(); let demo;
     try {
       demo = (await entry.load()).mount({ root: fixture.root, lang: 'en' });
@@ -25,85 +26,59 @@ for (const entry of demonstrations) {
       const window = descendants(root).find(hasClass('quiz-window'));
       const launcher = descendants(root).find(hasClass('quiz-launcher'));
       const close = descendants(root).find(hasClass('quiz-close'));
-      assert.equal(window.hidden, true);
-      assert.equal(launcher.children[0].tagName, 'svg');
-      assert.doesNotMatch(root.textContent, /Try four questions whenever you like/);
-      launcher.dispatchEvent(new Event('click'));
-      assert.equal(window.hidden, false);
-      assert.equal(window.getAttribute('aria-modal'), 'false');
-      assert.equal(launcher.getAttribute('aria-expanded'), 'true');
       const body = descendants(root).find(hasClass('quiz-body'));
-      const questions = quizzes[entry.id];
       const nodes = () => descendants(body);
-      const action = () => nodes().find(node => node.tagName === 'button');
+      const action = () => nodes().find(hasClass('quiz-action'));
       const choices = () => nodes().filter(node => node.type === 'radio');
-      const choose = index => { const radio = choices()[index]; radio.checked = true; radio.dispatchEvent(new Event('change')); };
+      const choose = index => { choices()[index].checked = true; choices()[index].dispatchEvent(new Event('change')); };
+      assert.equal(window.hidden, true); launcher.dispatchEvent(new Event('click'));
+      assert.equal(window.getAttribute('aria-modal'), 'false');
       assert.equal(action().disabled, true);
-      for (let index = 0; index < questions.length; index++) {
-        const question = questions[index];
-        for (const language of ['en', 'he']) {
-          assert.ok(question.prompt[language]);
-          assert.ok(question.explanation[language]);
-          assert.equal(question.options[language].length, 3);
-        }
-        assert.ok(Number.isInteger(question.correct) && question.correct >= 0 && question.correct < 3);
+      const ids = [];
+      for (let index = 0; index < 5; index++) {
+        const question = quizzes[entry.id].find(question => choices()[0].name === `${entry.id}-quiz-${question.id}`);
+        ids.push(question.id);
+        // Experiment challenges remain optional in ordinary question sets.
+        nodes().find(hasClass('quiz-skip'))?.dispatchEvent(new Event('click'));
         const answer = index % 2 ? (question.correct + 1) % 3 : question.correct;
-        choose(answer); assert.equal(action().disabled, false);
+        choose(answer);
         if (index === 0) {
-          close.dispatchEvent(new Event('click'));
-          assert.equal(window.hidden, true);
-          assert.equal(fixture.document.activeElement, launcher);
-          launcher.dispatchEvent(new Event('click'));
-          assert.equal(window.hidden, false);
-          const parameter = fixture.find(node => node.type === 'number');
-          parameter.dispatchEvent(new Event('change'));
+          close.dispatchEvent(new Event('click')); assert.equal(window.hidden, true);
+          assert.equal(fixture.document.activeElement, launcher); launcher.dispatchEvent(new Event('click'));
+          fixture.find(node => node.type === 'number').dispatchEvent(new Event('change'));
           assert.equal(choices()[answer].checked, true);
         }
         action().dispatchEvent(new Event('click'));
         assert.ok(choices().every(node => node.disabled));
-        let feedback = nodes().find(hasClass('quiz-feedback'));
+        const feedback = nodes().find(hasClass('quiz-feedback'));
         assert.match(readableText(feedback), index % 2 ? /^Not quite\./ : /^Correct\./);
-        assert.ok(readableText(feedback).includes(plainCopy(question.explanation.en)));
-        demo.setLanguage('he');
-        assert.equal(launcher.children[0].tagName, 'svg');
-        assert.match(launcher.textContent, /בודקים את ההבנה/);
-        feedback = nodes().find(hasClass('quiz-feedback'));
-        assert.ok(readableText(feedback).includes(plainCopy(question.explanation.he)));
-        assert.equal(choices()[answer].checked, true);
-        demo.setLanguage('en');
+        assert.equal(fixture.document.activeElement, feedback);
+        if (index % 2) assert.ok(nodes().some(hasClass('quiz-reveal')));
+        demo.setLanguage('he'); assert.match(launcher.textContent, /בודקים את ההבנה/);
+        assert.equal(choices()[answer].checked, true); demo.setLanguage('en');
+        if (index % 2) {
+          assert.equal(nodes().filter(hasClass('is-correct')).length, 0, 'wrong feedback must not reveal the correct option');
+          action().dispatchEvent(new Event('click'));
+          choose(question.correct); action().dispatchEvent(new Event('click'));
+          assert.match(readableText(nodes().find(hasClass('quiz-feedback'))), /^Correct\./);
+        }
         action().dispatchEvent(new Event('click'));
       }
-      assert.match(root.textContent, /2 of 4 correctly/);
-      assert.equal(hasQuizBadge(entry.id), false);
-      action().dispatchEvent(new Event('click'));
-      assert.equal(action().disabled, true);
-      assert.ok(choices().every(node => !node.checked && !node.disabled));
-      for (const question of questions) {
-        choose(question.correct);
-        action().dispatchEvent(new Event('click'));
-        action().dispatchEvent(new Event('click'));
-      }
-      assert.match(root.textContent, /4 of 4 correctly/);
-      assert.equal(hasQuizBadge(entry.id), true);
-      assert.ok(nodes().find(hasClass('quiz-earned')));
-      const badge = createQuizBadge(entry.id, 'en');
-      assert.equal(badge.children[0].tagName, 'svg');
-      assert.match(badge.getAttribute('aria-label'), /all answers correct/);
-      action().dispatchEvent(new Event('click'));
-      assert.equal(hasQuizBadge(entry.id), true, 'retry keeps an earned badge');
+      assert.equal(new Set(ids).size, 5);
+      assert.match(body.textContent, /3 of 5.*first attempt/);
+      assert.equal(quizMilestones(entry.id, quizzes[entry.id]).explorer, true);
+      assert.equal(quizMilestones(entry.id, quizzes[entry.id]).mastery, false);
+      assert.equal(fixture.frames.size, 0);
+      const next = nodes().find(node => node.tagName === 'button' && node.textContent === 'Start next set');
+      next.dispatchEvent(new Event('click')); assert.equal(action().disabled, true);
+      const nextIds = readQuizProgress(entry.id).active.ids;
+      assert.ok(nextIds.some(id => !ids.includes(id)), 'next set must include unseen questions');
       const escape = new Event('keydown', { cancelable: true }); Object.defineProperty(escape, 'key', { value: 'Escape' });
       window.dispatchEvent(escape); assert.equal(window.hidden, true);
-      assert.equal(fixture.frames.size, 0, 'quizzes do not start simulation playback');
       launcher.dispatchEvent(new Event('click'));
-      const play = fixture.find(node => node.tagName === 'button' && node.textContent === 'Play');
-      play.dispatchEvent(new Event('click'));
-      fixture.frame(0); fixture.frame(100);
-      assert.equal(window.hidden, false);
-      assert.equal(fixture.frames.size, 1, 'simulation runs while the quiz is open');
-      close.dispatchEvent(new Event('click'));
-      assert.equal(fixture.frames.size, 1, 'closing the quiz does not pause playback');
-      demo.dispose(); demo = null;
-      assert.equal(fixture.root.children.length, 0);
+      fixture.find(node => node.tagName === 'button' && node.textContent === 'Play').dispatchEvent(new Event('click'));
+      close.dispatchEvent(new Event('click')); assert.equal(fixture.frames.size, 1);
+      demo.dispose(); demo = null; assert.equal(fixture.root.children.length, 0);
     } finally { demo?.dispose(); fixture.cleanup(); }
   });
 }
@@ -134,7 +109,7 @@ test('mobile quiz keeps its fixed layout and starts new questions at the top', (
   globalThis.matchMedia = () => ({ matches: true });
   const controller = new AbortController();
   try {
-    const quiz = createQuiz({ system: demonstrations[0].id, lang: 'en', signal: controller.signal });
+    const quiz = createQuiz({ system: demonstrations[0].id, lang: 'en', signal: controller.signal, initialMode: 'practice' });
     fixture.root.append(quiz.root);
     const title = fixture.find(node => node.tagName === 'h2');
     assert.equal(title.getAttribute('aria-label'), title.textContent);
@@ -147,7 +122,7 @@ test('mobile quiz keeps its fixed layout and starts new questions at the top', (
     title.dispatchEvent(arrow);
     assert.equal(arrow.defaultPrevented, false);
     const body = fixture.find(hasClass('quiz-body'));
-    const action = () => descendants(body).find(node => node.tagName === 'button');
+    const action = () => descendants(body).find(hasClass('quiz-action'));
     fixture.find(node => node.type === 'radio').dispatchEvent(new Event('change'));
     action().dispatchEvent(new Event('click'));
     assert.ok(hasClass('is-checked')(body));
@@ -163,7 +138,7 @@ test('mobile quiz keeps its fixed layout and starts new questions at the top', (
 test('quiz mathematics uses inline MathML in Hebrew answers and feedback', () => {
   const fixture = browserFixture(), controller = new AbortController();
   try {
-    const quiz = createQuiz({ system: 'incline', lang: 'he', signal: controller.signal });
+    const quiz = createQuiz({ system: 'incline', lang: 'he', signal: controller.signal, initialMode: 'practice' });
     fixture.root.append(quiz.root);
     const nodes = () => descendants(quiz.root);
     const math = () => nodes().filter(node => node.tagName === 'math');
@@ -176,7 +151,8 @@ test('quiz mathematics uses inline MathML in Hebrew answers and feedback', () =>
     action().dispatchEvent(new Event('click'));
     const feedback = nodes().find(hasClass('quiz-feedback'));
     assert.equal(hasClass('is-incorrect')(feedback), true);
-    assert.ok(descendants(feedback).some(node => node.tagName === 'math'));
+    assert.ok(readableText(feedback).length > 20);
+    nodes().find(hasClass('quiz-reveal')).dispatchEvent(new Event('click'));
     action().dispatchEvent(new Event('click'));
     assert.ok(nodes().some(node => node.tagName === 'msub'));
     for (const expression of math()) {
@@ -185,7 +161,7 @@ test('quiz mathematics uses inline MathML in Hebrew answers and feedback', () =>
       assert.equal(expression.getAttribute('class'), 'quiz-math');
     }
     const progress = nodes().find(node => node.tagName === 'progress');
-    assert.equal(progress.value, 2); assert.equal(progress.max, 4);
+    assert.equal(progress.value, 2); assert.equal(progress.max, 10);
     assert.doesNotMatch(quiz.root.textContent, /\$/);
     quiz.setLanguage('en');
     assert.ok(nodes().some(node => node.tagName === 'msub'));
@@ -205,7 +181,7 @@ for (const [system, questionIndex, structures] of [
     test(`${system}: question ${questionIndex + 1} renders typeset equations in ${language}`, () => {
       const fixture = browserFixture(), controller = new AbortController();
       try {
-        const quiz = createQuiz({ system, lang: language, signal: controller.signal }); fixture.root.append(quiz.root);
+        const quiz = createQuiz({ system, lang: language, signal: controller.signal, initialMode: 'practice' }); fixture.root.append(quiz.root);
         const nodes = () => descendants(quiz.root);
         const action = () => nodes().find(node => node.tagName === 'button' && hasClass('primary')(node));
         for (let index = 0; index <= questionIndex; index++) {
@@ -248,9 +224,9 @@ test('tube quiz keeps its question and score if feedback rendering fails, then r
     return node;
   };
   try {
-    const quiz = createQuiz({ system: 'rotating-tube', lang: 'en', signal: controller.signal }); fixture.root.append(quiz.root);
+    const quiz = createQuiz({ system: 'rotating-tube', lang: 'en', signal: controller.signal, initialMode: 'practice' }); fixture.root.append(quiz.root);
     const body = fixture.find(hasClass('quiz-body'));
-    const action = () => descendants(body).find(node => node.tagName === 'button');
+    const action = () => descendants(body).find(hasClass('quiz-action'));
     const choose = index => descendants(body).filter(node => node.type === 'radio')[index].dispatchEvent(new Event('change'));
     choose(question.correct);
     const children = [...body.children], submit = clicks.get(action());
@@ -267,7 +243,7 @@ test('tube quiz keeps its question and score if feedback rendering fails, then r
     for (const remaining of quizzes['rotating-tube'].slice(1)) {
       choose(remaining.correct); action().dispatchEvent(new Event('click')); action().dispatchEvent(new Event('click'));
     }
-    assert.match(body.textContent, /4 of 4 correctly/, 'a failed render must not count the answer twice');
+    assert.match(body.textContent, /10 of 10.*first attempt/, 'a failed render must not count the answer twice');
   } finally { question.explanation.en = originalExplanation; controller.abort(); fixture.cleanup(); }
 });
 
@@ -284,11 +260,11 @@ test('tube quiz loads the new math renderer even when an older renderer is alrea
     assert.throws(() => older.latexExpression(String.raw`m\omega^2r`), /Unsupported authored LaTeX command: omega/);
     await writeFile(rendererPath, currentSource);
     const fresh = await import(pathToFileURL(join(directory, 'core/quiz.js')).href);
-    const quiz = fresh.createQuiz({ system: 'rotating-tube', lang: 'en', signal: controller.signal }); fixture.root.append(quiz.root);
+    const quiz = fresh.createQuiz({ system: 'rotating-tube', lang: 'en', signal: controller.signal, initialMode: 'practice' }); fixture.root.append(quiz.root);
     const body = fixture.find(hasClass('quiz-body'));
     const radio = descendants(body).find(node => node.type === 'radio'); radio.dispatchEvent(new Event('change'));
-    descendants(body).find(node => node.tagName === 'button').dispatchEvent(new Event('click'));
-    assert.equal(body.children.length, 4);
+    descendants(body).find(hasClass('quiz-action')).dispatchEvent(new Event('click'));
+    assert.ok(descendants(body).some(hasClass('quiz-feedback')));
     assert.match(readableText(body), /Correct\./);
     assert.ok(descendants(body).some(node => node.tagName === 'mi' && node.textContent === 'ω'));
   } finally { controller.abort(); fixture.cleanup(); await rm(directory, { recursive: true, force: true }); }

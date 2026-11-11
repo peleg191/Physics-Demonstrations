@@ -29,3 +29,17 @@ test('each catalog illustration has a separate notebook asset while its original
     assert.match(notebookArt, /stroke-width="\.85"/, `${entry.id}: expected pencil outlines`);
   }
 });
+
+test('all catalog illustrations have theme-specific assets with unchanged geometry in both styles', async () => {
+  const geometry = svg => [...svg.matchAll(/\s(viewBox|d|x|y|cx|cy|r|rx|ry|width|height|transform|opacity|fill-opacity)="([^"]*)"/g)].map(match => match.slice(1));
+  for (const entry of demonstrations) for (const style of ['current', 'notebook']) {
+    const light = illustrationSource(entry.illustration, style, 'light');
+    const dark = illustrationSource(entry.illustration, style, 'dark');
+    assert.equal(illustrationSource(entry.illustration, style), light);
+    assert.notEqual(dark, light);
+    assert.match(dark, style === 'notebook' ? /notebook\/dark\/[^/]+\.svg$/ : /assets\/dark\/[^/]+\.svg$/);
+    const [lightArt, darkArt] = await Promise.all([light, dark].map(path => readFile(new URL(`../public/${path}`, import.meta.url), 'utf8')));
+    assert.notEqual(darkArt, lightArt, `${entry.id}: dark artwork needs its own palette`);
+    assert.deepEqual(geometry(darkArt), geometry(lightArt), `${entry.id}: theming preserves illustration geometry`);
+  }
+});
