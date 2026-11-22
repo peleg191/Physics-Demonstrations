@@ -11,7 +11,7 @@ import { element, setText, svgElement as s, svgText } from './dom.js';
 import { translator, format } from './i18n.js';
 
 // Shared playback and selection; each oscillator supplies its own physical model.
-export function mountOscillator({ root, lang, kind, strings, defaultParameters, oscillatorState, duration, specs }) {
+export function mountOscillator({ root, lang, kind, strings, defaultParameters, oscillatorState, duration, specs, shiftedScene }) {
   const dual = kind === 'double-spring';
   const pendulum = kind === 'pendulum', gravity = physicsConfig.gravity;
   let params = { ...defaultParameters }, words = strings[lang], selected = false, paused = false, scene;
@@ -24,14 +24,15 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: `${kind}-analysis`, onClose: close });
   const position = metric(words.position, pendulum ? '°' : 'm', pendulum ? 'θ' : 'x');
   const velocity = metric(words.velocity, pendulum ? 'rad/s' : 'm/s', pendulum ? 'ω' : 'v'), period = metric(words.period, 's', 'T');
-  api.metrics.append(position.root, velocity.root, period.root);
+  const shift = shiftedScene ? metric(words.shift, 'm', 'ΔL') : null;
+  api.metrics.append(...(shift ? [shift.root] : []), position.root, velocity.root, period.root);
   for (const spec of specs) {
     const control = parameter({ ...spec, id: `${kind}-${spec.key}`, label: words[spec.key], value: params[spec.key], signal: api.signal,
       onChange(value) { params[spec.key] = value; reset(); } });
     controls.set(spec.key, control); api.parameters.append(control.root);
   }
-  const energyBounds = { ...energyTransferBounds, left: pendulum ? 18 : -165, top: pendulum ? 72 : 164, height: 282 };
-  const energy = createEnergyTransfer({ api, id: kind, lang, elastic: !pendulum, gravitational: pendulum,
+  const energyBounds = { ...energyTransferBounds, left: shiftedScene ? -95 : pendulum ? 18 : -165, top: shiftedScene ? 128 : pendulum ? 72 : 164, height: shiftedScene ? 332 : 282 };
+  const energy = createEnergyTransfer({ api, id: kind, lang, elastic: !pendulum, gravitational: pendulum || Boolean(shiftedScene),
     bounds: energyBounds, initiallyVisible: false, onVisibilityChange: () => render(api.clock.time) });
   function reset() { paused = false; api.clock.reset(); }
   function defaults() { params = { ...defaultParameters }; for (const [key, control] of controls) control.update(params[key]); reset(); }
@@ -56,8 +57,9 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     if (!point) return;
     suppressClick = false;
     const state = oscillatorState(params, api.clock.time, gravity);
-    const x = pendulum ? 400 + params.length * 95 * Math.sin(state.position) : 400 + state.position * 180;
-    const y = pendulum ? 100 + params.length * 95 * Math.cos(state.position) : 320;
+    const [x, y] = scene.shifted ? scene.shifted.bodyPosition(params, state) : pendulum
+      ? [400 + params.length * 95 * Math.sin(state.position), 100 + params.length * 95 * Math.cos(state.position)]
+      : [400 + state.position * 180, 320];
     drag = { id: event.pointerId, startX: event.clientX, startY: event.clientY,
       offsetX: point.x - x, offsetY: point.y - y, amplitude: params.amplitude, playing: api.clock.playing, moved: false };
     // Capture on the body so a press without dragging still clicks the body.
@@ -72,7 +74,9 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     event.preventDefault();
     drag.moved = true;
     scene.body.style.cursor = 'grabbing';
-    const displacement = pendulum
+    const displacement = scene.shifted
+      ? scene.shifted.displacement(params, oscillatorState(params, 0, gravity), point.x - drag.offsetX, point.y - drag.offsetY)
+      : pendulum
       ? Math.atan2(point.x - drag.offsetX - 400, point.y - drag.offsetY - 100) * 180 / Math.PI
       : (point.x - drag.offsetX - 400) / 180;
     const clamped = Math.max(amplitudeSpec.min, Math.min(amplitudeSpec.max, displacement));
@@ -97,41 +101,42 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) api.svg.addEventListener(type, finishDrag, { signal: api.signal });
   function buildScene() {
     const svg = api.svg;
-    s('path', { d: pendulum ? 'M 300 80 H 500 M 400 80 V 100' : 'M 115 180 V 350 H 700', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 4, fill: 'none' }, svg);
+    const shifted = shiftedScene?.(svg);
+    if (!shifted) s('path', { d: pendulum ? 'M 300 80 H 500 M 400 80 V 100' : 'M 115 180 V 350 H 700', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 4, fill: 'none' }, svg);
     if (dual) s('path', { d: 'M 685 180 V 350', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 4 }, svg);
     const secondConnector = dual ? s('path', { fill: 'none', stroke: 'var(--scene-green, #6f8e65)', 'stroke-width': 3 }, svg) : null;
-    const reference = s('line', { x1: 400, x2: 400, y1: pendulum ? 100 : 230, y2: pendulum ? 410 : 375, stroke: 'var(--scene-muted, #9caa91)', 'stroke-dasharray': '5 6' }, svg);
-    const connector = s('path', { fill: 'none', stroke: pendulum ? 'var(--scene-warm-edge, #ad8959)' : 'var(--scene-green, #6f8e65)', 'stroke-width': 3 }, svg);
+    const reference = shifted ? null : s('line', { x1: 400, x2: 400, y1: pendulum ? 100 : 230, y2: pendulum ? 410 : 375, stroke: 'var(--scene-muted, #9caa91)', 'stroke-dasharray': '5 6' }, svg);
+    const connector = shifted ? null : s('path', { fill: 'none', stroke: pendulum ? 'var(--scene-warm-edge, #ad8959)' : 'var(--scene-green, #6f8e65)', 'stroke-width': 3 }, svg);
     const body = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': `${kind}-analysis`, 'aria-describedby': hint.id }, svg);
     body.style.touchAction = 'none'; body.style.cursor = 'grab';
-    s('circle', { class: 'mass-hit', r: 64, fill: 'transparent', 'aria-hidden': 'true' }, body);
+    s('circle', { class: 'mass-hit', r: shifted ? 37 : 64, fill: 'transparent', 'aria-hidden': 'true' }, body);
     if (pendulum) s('circle', { class: 'mass-body', r: 19, fill: 'var(--scene-warm, #c38e60)' }, body);
-    else s('rect', { class: 'mass-body', x: -30, y: -30, width: 60, height: 60, rx: 7, fill: 'var(--scene-green, #61816b)' }, body);
-    svgText(body, 0, 6, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
+    else s('rect', { class: 'mass-body', x: shifted ? -23 : -30, y: shifted ? -23 : -30, width: shifted ? 46 : 60, height: shifted ? 46 : 60, rx: 7, fill: 'var(--scene-green, #61816b)' }, body);
+    const bodyLabel = svgText(body, 0, 6, 'm', { class: 'mass-text', 'text-anchor': 'middle' });
     const forces = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, svg);
     const force = s('path', { fill: 'none', stroke: 'var(--scene-force-weight, #9a451b)', 'stroke-width': 4 }, forces);
     const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle', class: 'force-label' });
     const geometry = geometryLayer(svg);
     prepareSketchOutlines(api.svg);
-    scene = { body, reference, connector, secondConnector, forces, force, label, geometry };
+    scene = { shifted, body, bodyLabel, reference, connector, secondConnector, forces, force, label, geometry };
   }
   function render(time, { updateReadouts = true } = {}) {
     if (!scene) return;
     const state = oscillatorState(params, time, gravity);
     const pendulumHeight = params.length * 95 + 160;
-    const frame = pendulum
+    const frame = scene.shifted ? energy.visible ? '-115 0 825 520' : '170 0 540 520' : pendulum
       ? energy.visible ? `0 10 600 ${Math.max(pendulumHeight, 365)}` : `200 10 400 ${pendulumHeight}`
       : energy.visible ? '-185 135 905 320' : '80 135 640 320';
     api.setSceneViewBox(frame);
-    const sceneObstacles = pendulum
+    const sceneObstacles = scene.shifted ? [{ left: 220, top: 42, width: 445, height: 435 }] : pendulum
       ? [{ left: 280, top: 65, width: 280, height: params.length * 95 + 105 }]
       : [{ left: 100, top: 170, width: 40, height: 190 },
         { left: 165, top: 260, width: 460, height: 110 },
         { left: 370, top: 375, width: 235, height: 65 }];
     api.setGraphObstacles(energy.visible ? [energyBounds, ...sceneObstacles] : sceneObstacles);
-    energy.update(pendulum ? state : { ...state, elastic: state.potential }, { updateReadouts });
+    energy.update(pendulum || scene.shifted ? state : { ...state, elastic: state.potential }, { updateReadouts });
     showInitialGeometry(scene.geometry, time, api.clock.playing);
-    if (time === 0 && !api.clock.playing) {
+    if (!scene.shifted && time === 0 && !api.clock.playing) {
       scene.geometry.replaceChildren();
       if (pendulum) {
         const angle = params.amplitude * Math.PI / 180, length = params.length * 95;
@@ -147,8 +152,11 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
         geometryLabel(scene.geometry, 400, 430, 'x = 0');
       }
     }
-    let x, y, dx, dy;
-    if (pendulum) {
+    let x, y, dx, dy, angle = 0, forceLabel;
+    if (scene.shifted) {
+      ({ x, y, dx, dy, angle, forceLabel } = scene.shifted.render(params, state, words));
+      scene.bodyLabel.setAttribute('transform', `rotate(${-angle})`);
+    } else if (pendulum) {
       const length = params.length * 95;
       x = 400 + length * Math.sin(state.position); y = 100 + length * Math.cos(state.position);
       scene.connector.setAttribute('d', `M 400 100 L ${x} ${y}`);
@@ -167,24 +175,27 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
       }
       dx = -state.position / (Math.abs(params.amplitude) || 1) * 85; dy = 0;
     }
-    scene.body.setAttribute('transform', `translate(${x} ${y})`);
+    scene.body.setAttribute('transform', `translate(${x} ${y})${angle ? ` rotate(${angle})` : ''}`);
     scene.body.setAttribute('aria-label', words.block); scene.body.setAttribute('aria-pressed', String(selected));
     scene.forces.setAttribute('display', selected ? 'inline' : 'none');
     const length = Math.hypot(dx, dy), head = Math.min(10, length / 2), ux = length ? dx / length : 0, uy = length ? dy / length : 0;
     scene.force.setAttribute('d', `M ${x} ${y} l ${dx} ${dy} m ${-ux * head - uy * head / 2} ${-uy * head + ux * head / 2} l ${ux * head + uy * head / 2} ${uy * head - ux * head / 2} l ${-ux * head + uy * head / 2} ${-uy * head - ux * head / 2}`);
-    scene.label.setAttribute('x', x + dx / 2); scene.label.setAttribute('y', y + dy / 2 - 40); setText(scene.label, words.force);
+    const [labelX, labelY] = forceLabel ?? [x + dx / 2, y + dy / 2 - 40];
+    scene.label.setAttribute('x', labelX); scene.label.setAttribute('y', labelY); setText(scene.label, words.force);
     if (api.clock.playing) paused = false;
     const ended = time >= duration(params, gravity);
     if (updateReadouts) {
       if (selected) analysis.update(oscillatorAnalysis(kind, words, paused, ended));
+      shift?.set(state.shift);
       position.set(pendulum ? state.position * 180 / Math.PI : state.position); velocity.set(state.velocity); period.set(state.period);
       setText(api.feedback, ended ? words.end : words.moving);
-      api.setDescription(`${words.caption}. ${words.position}: ${format(pendulum ? state.position * 180 / Math.PI : state.position)} ${pendulum ? '°' : 'm'}. ${ended ? words.end : words.moving}`);
+      api.setDescription(`${words.caption}. ${shift ? `${words.shift}: ${format(state.shift)} m. ` : ''}${words.position}: ${format(pendulum ? state.position * 180 / Math.PI : state.position)} ${pendulum ? '°' : 'm'}. ${ended ? words.end : words.moving}`);
     }
   }
   function setLanguage(next) {
     words = strings[next]; api.setLanguage(next); energy.setLanguage(next); hint.textContent = words.hint;
     for (const spec of specs) controls.get(spec.key).localize(words[spec.key], spec.key === 'mass' ? translator(next)('kilograms') : spec.unit);
+    shift?.localize(words.shift, 'm');
     position.localize(words.position, pendulum ? '°' : 'm'); velocity.localize(words.velocity, pendulum ? 'rad/s' : 'm/s'); period.localize(words.period, 's');
     api.modelText.textContent = words.about; api.liveMark.textContent = words.caption; render(api.clock.time);
   }

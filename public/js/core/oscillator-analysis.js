@@ -1,5 +1,6 @@
 import { row, fraction, identifier as i, expression as e, power, subscript, trig } from './math.js';
 export function oscillatorAnalysis(kind, words, paused, ended) {
+  const shifted = kind === 'vertical-spring' || kind === 'incline-spring';
   const dual = kind === 'double-spring';
   const stiffness = dual ? row(e('2'), i('k')) : i('k');
   const pendulum = kind === 'pendulum', q = i(pendulum ? 'θ' : 'x'), omega = i('ω');
@@ -24,5 +25,19 @@ export function oscillatorAnalysis(kind, words, paused, ended) {
       math(pendulum ? 'T = 2π/ω = 2π√(L/g)' : dual ? 'T = 2π/ω = 2π√(m/(2k))' : 'T = 2π/ω = 2π√(m/k)', row(e('T ='), fraction(e('2π'), omega), e('= 2π'), ['msqrt', inverseRatio])),
       prose(words.conclusion)],
   };
+  if (shifted) {
+    const inclined = kind === 'incline-spring';
+    const weight = inclined ? row(e('mg'), trig('sin', i('θ'))) : e('mg');
+    const weightText = inclined ? 'mg sin θ' : 'mg';
+    const shift = e('ΔL');
+    result.equations = [
+      ...(inclined ? [math('N = mg cos θ', row(e('N = mg'), trig('cos', i('θ'))))] : []),
+      math(`m d²x/dt² = ${weightText} − kq`, row(i('m'), acceleration, e('='), weight, e('− kq'))),
+    ];
+    result.solution.splice(1, 0,
+      math(`kΔL = ${weightText}`, row(i('k'), shift, e('='), weight)),
+      math(`ΔL = (${weightText})/k`, row(shift, e('='), fraction(weight, i('k')))),
+      math(`x = q − ΔL; F net = −kx`, e('x = q − ΔL, F = −kx')));
+  }
   return result;
 }

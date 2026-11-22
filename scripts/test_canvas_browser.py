@@ -10,7 +10,7 @@ import test_quiz_browser as harness
 SYSTEMS = ['basketball', 'pulley', 'incline', 'pendulum', 'spring', 'elevator',
            'friction-stacked', 'friction-table', 'friction-hanging', 'double-spring',
            'carousel', 'rotating-tube', 'two-string', 'energy-bowl',
-           'energy-incline', 'escape-speed', 'spring-launcher']
+           'energy-incline', 'escape-speed', 'spring-launcher', 'vertical-spring', 'incline-spring']
 
 # Sample actual rendered SVG/MathML colors, including labels on filled bodies.
 READ_COLORS = r'''(()=>{

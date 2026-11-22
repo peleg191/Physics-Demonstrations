@@ -7,7 +7,7 @@ const massSpring = reasoning('Why does the heavier mass take longer to complete 
   ['The same spring force acts on more inertia', 'A heavier mass makes the spring less stiff', 'Gravity pulls the heavier mass horizontally'],
   ['באותו העתק פועל אותו כוח מחזיר על מסה גדולה יותר', 'הגדלת המסה מקטינה את קבוע הקפיץ', 'כוח הכובד מושך את הגוף הכבד בכיוון האופקי'],
   'At the same displacement the restoring force is unchanged, but a larger mass has less acceleration and returns more slowly.', 'באותו העתק פועל אותו כוח מחזיר. לפי החוק השני של ניוטון, כשהמסה גדולה יותר גודל התאוצה קטן יותר, ולכן זמן המחזור גדל.');
-const amplitude = reasoning('Why does a larger release displacement leave the period unchanged in this model?', 'מדוע הגדלת ההעתק ההתחלתי אינה משנה את זמן המחזור במודל האידאלי?',
+const amplitude = reasoning('Why does a larger release displacement leave the period unchanged in this model?', 'מדוע הגדלת ההעתק ההתחלתי מנקודת שיווי המשקל אינה משנה את זמן המחזור במודל האידאלי?',
   ['The longer journey comes with proportionally stronger restoring acceleration', 'The mass moves at the same speed throughout both runs', 'The spring force does not change with displacement'],
   ['ההעתק והתאוצה המחזירה גדלים באותו יחס', 'גודל מהירות הגוף קבוע וזהה בשני המצבים', 'כוח הקפיץ אינו משתנה עם ההעתק'],
   'The restoring force grows linearly with displacement. The larger excursion is accompanied by greater speed, leaving the period unchanged.', 'הכוח המחזיר יחסי להעתק. כשהמשרעת גדלה, הגוף אמנם עובר דרך ארוכה יותר, אך גם גודל מהירותו גדל, כך שזמן המחזור אינו משתנה.');
@@ -17,7 +17,7 @@ const explanations = {
   'spring-8': reasoning('Why does a stiffer spring complete the oscillation sooner?', 'מדוע הגדלת קבוע הקפיץ מקצרת את זמן המחזור?',
     ['It produces greater restoring acceleration at the same displacement', 'It reduces the mass', 'It removes the equilibrium point'], ['באותו העתק פועל כוח מחזיר גדול יותר', 'הוא מקטין את המסה', 'הוא מבטל את נקודת שיווי המשקל'],
     'Greater stiffness gives a stronger force for the same displacement, so velocity changes more quickly.', 'קבוע קפיץ גדול יותר פירושו כוח מחזיר גדול יותר באותו העתק. לכן גודל התאוצה גדל וזמן המחזור קטן.'),
-  'pendulum-1': reasoning('Why does a longer pendulum swing more slowly?', 'מדוע מטוטלת ארוכה יותר מתנודדת לאט יותר?',
+  'pendulum-1': reasoning('Why does a longer pendulum swing more slowly?', 'מדוע זמן המחזור של מטוטלת ארוכה יותר גדול יותר?',
     ['Its restoring angular acceleration is smaller at the same angle', 'The bob has more mass', 'Gravity disappears farther from the pivot'], ['התאוצה הזוויתית המחזירה קטנה יותר באותה זווית', 'למשקולת יש מסה גדולה יותר', 'הכבידה נעלמת רחוק מנקודת התלייה'],
     'For the same angle, a longer pendulum has a smaller angular acceleration. Its reversal takes longer.', 'באותה זווית הסטייה, גודל התאוצה הזוויתית קטן יותר במטוטלת ארוכה. לכן נדרש זמן רב יותר להשלמת תנודה.'),
   'pendulum-2': reasoning('Why does changing bob mass leave the period unchanged?', 'מדוע שינוי מסת המשקולת אינו משנה את זמן המחזור?',
@@ -90,7 +90,10 @@ const quantities = {
   mass1: ['Hanging mass', 'מסה תלויה', 'kg'], friction: ['Friction coefficient', 'מקדם חיכוך', ''],
   mu: ['Friction coefficient', 'מקדם חיכוך', ''], radius: ['Radius', 'רדיוס', 'm'], frequency: ['Frequency', 'תדירות', 'Hz'], releaseAngle: ['Release angle', 'זווית שחרור', '°'],
 };
+const equilibriumGoal = ['Compare the separation between the natural-length and equilibrium markers.', 'השוו את המרחק בין הסימון של אורך המנוחה של הקפיץ לסימון של נקודת שיווי המשקל.'];
 const goals = {
+  'vertical-spring': equilibriumGoal,
+  'incline-spring': equilibriumGoal,
   'energy-incline': ['Compare the speeds at the bottom of the ramp.', 'השוו את המהירויות בתחתית המדרון.'],
   'escape-speed': ['Compare the escape speed and the sign of mechanical energy.', 'השוו את מהירות הבריחה ואת סימן האנרגיה המכנית.'],
   'spring-launcher': ['Compare the speed at spring release and the maximum height.', 'השוו את המהירות בניתוק מהקפיץ ואת הגובה המרבי.'],
@@ -132,7 +135,7 @@ export function addExperimentReasoning(banks) {
     if (!quantity) throw new Error(`Missing experiment comparison: ${system}-${key}`);
     question.experiment.change = { label: { en: quantity[0], he: quantity[1] }, unit: quantity[2], values: [first.values[key], second.values[key]] };
     question.experiment.goal = { en: goals[system][0], he: goals[system][1] };
-    question.experiment.cyclic = ['spring', 'double-spring', 'pendulum', 'carousel', 'rotating-tube', 'two-string', 'energy-bowl'].includes(system);
+    question.experiment.cyclic = ['spring', 'double-spring', 'vertical-spring', 'incline-spring', 'pendulum', 'carousel', 'rotating-tube', 'two-string', 'energy-bowl'].includes(system);
     question.experiment.observationFraction = question.experiment.cyclic ? system === 'energy-bowl' ? 0.5 : 0.25 : 1;
   }
 }

@@ -107,4 +107,19 @@ export const demonstrations = [
       mount: options => mountEnergySystem(id, options),
     })),
   })),
+  ...[
+    ['vertical-spring', '18', 'Vertical spring oscillator', 'מתנד מסה–קפיץ אנכי',
+      'See how weight stretches the spring and shifts the center of oscillation.',
+      'בדקו כיצד כוח הכובד מותח את הקפיץ ומסיט את נקודת שיווי המשקל.'],
+    ['incline-spring', '19', 'Spring oscillator on an incline', 'מתנד מסה–קפיץ במדרון',
+      'Change the slope angle and watch the equilibrium move as the downhill component of weight changes.',
+      'שנו את זווית המדרון ועקבו אחר תזוזת נקודת שיווי המשקל כאשר רכיב הכובד לאורך המדרון משתנה.'],
+  ].map(([id, number, en, he, descriptionEn, descriptionHe]) => ({
+    id, number, level: 'basic', topic: 'mechanics', illustration: `./assets/${id}.svg`,
+    title: { en, he }, description: { en: descriptionEn, he: descriptionHe },
+    tags: { en: ['Equilibrium', 'Harmonic motion'], he: ['שיווי משקל', 'תנועה הרמונית'] },
+    load: () => import('./demos/gravity-spring/index.js').then(({ mountGravitySpring }) => ({
+      mount: options => mountGravitySpring(id, options),
+    })),
+  })),
 ];

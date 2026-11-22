@@ -4,6 +4,7 @@ import { setMaxListeners } from 'node:events';
 import * as pendulum from '../public/js/demos/pendulum/physics.js';
 import * as spring from '../public/js/demos/spring/physics.js';
 import * as doubleSpring from '../public/js/demos/double-spring/physics.js';
+import { gravitySpringState } from '../public/js/demos/gravity-spring/physics.js';
 import { demonstrations } from '../public/js/registry.js';
 import { browserFixture } from './dom-fixture.js';
 setMaxListeners(0);
@@ -156,3 +157,26 @@ for (const [id, model] of [['spring', spring], ['double-spring', doubleSpring], 
     } finally { demo?.dispose(); fixture.cleanup(); }
   });
 }
+
+
+test('gravity shifts the spring equilibrium while preserving harmonic motion and mechanical energy', () => {
+  const gravity = 10, params = { mass: 5, stiffness: 40, amplitude: -0.6 };
+  const period = spring.oscillatorState(params, 0).period;
+  for (const [angle, component] of [[undefined, 1], [0, 0], [30, 0.5]]) {
+    const settings = { ...params, angle };
+    const force = params.mass * gravity * component;
+    const rest = gravitySpringState({ ...settings, amplitude: 0 }, period / 3, gravity);
+    near(rest.shift, force / params.stiffness);
+    near(rest.extension, rest.shift);
+    near(rest.velocity, 0);
+    near(rest.acceleration, 0);
+    const initial = gravitySpringState(settings, 0, gravity);
+    for (const phase of [0, 0.25, 0.5, 0.75]) {
+      const state = gravitySpringState(settings, period * phase, gravity);
+      near(state.period, period);
+      near(state.extension - state.shift, state.position);
+      near(params.mass * state.acceleration, force - params.stiffness * state.extension);
+      near(state.kinetic + state.elastic + state.gravitational, initial.total);
+    }
+  }
+});

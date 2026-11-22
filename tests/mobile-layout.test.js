@@ -23,7 +23,7 @@ test('graphs stay inside the simulation on mobile and desktop', async () => {
         const transport = fixture.find(hasClass('transport'));
         assert.equal(graphs.parentNode, stage);
         assert.equal(transport.parentNode, stage);
-        const energySystems = ['spring', 'double-spring', 'pendulum', 'spring-launcher', 'energy-incline', 'escape-speed', 'energy-bowl'];
+        const energySystems = ['spring', 'vertical-spring', 'incline-spring', 'double-spring', 'pendulum', 'spring-launcher', 'energy-incline', 'escape-speed', 'energy-bowl'];
         const buttons = transport.children.filter(node => node.tagName === 'button');
         const hasEnergy = energySystems.includes(entry.id);
         assert.equal(buttons.length, hasEnergy ? 5 : 4);

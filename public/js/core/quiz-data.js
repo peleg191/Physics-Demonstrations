@@ -1,3 +1,4 @@
+import { gravitySpringQuestions } from './quiz-gravity-spring.js';
 import { energyQuestions } from './quiz-energy.js';
 import { addExperimentReasoning } from './quiz-experiment-reasoning.js';
 import { addQuizFeedback } from './quiz-feedback.js';
@@ -11,6 +12,7 @@ const q = (en, he, optionsEn, optionsHe, correct, explanationEn, explanationHe) 
 });
 
 export const quizzes = {
+  ...Object.fromEntries(Object.entries(gravitySpringQuestions).map(([system, questions]) => [system, questions.slice(0, 4)])),
   ...Object.fromEntries(Object.entries(energyQuestions).map(([system, questions]) => [system, questions.slice(0, 4)])),
   'rotating-tube': [
     q('What supplies the inward force while the body stays at a fixed radius in the rotating tube?', 'איזה כוח מחזיק את הגוף בתנועה מעגלית ברדיוס קבוע בתוך הצינור המסתובב?',
@@ -44,7 +46,7 @@ export const quizzes = {
     q('A body is released from rest at the rim of a smooth bowl. What energy conversion occurs on descent?', 'משחררים גוף ממנוחה משפת קערה חלקה. איזו המרת אנרגיה מתרחשת בזמן הירידה?',
       ['Kinetic energy becomes potential energy', 'Energy is lost to the normal force', 'Potential energy becomes kinetic energy'], ['אנרגיה קינטית מומרת לאנרגיה פוטנציאלית כבידתית', 'אנרגיה אובדת עקב עבודת כוח הנורמל', 'אנרגיה פוטנציאלית כבידתית מומרת לאנרגיה קינטית'], 2,
       "The bowl is frictionless. $E_g$ decreases while $E_k$ increases by the same amount; their sum is constant.", "הקערה חלקה, ולכן האנרגיה המכנית נשמרת. $E_g$ קטנה ו־$E_k$ גדלה באותה כמות; הסכום נשמר."),
-    q('At the bottom C after release from the rim, which accelerations vanish?', 'הגוף מגיע לנקודה C שבתחתית הקערה לאחר שחרור מהשפה. איזו תאוצה מתאפסת שם?',
+    q('At the bottom C after release from the rim, which accelerations vanish?', 'הגוף מגיע לנקודה C שבתחתית הקערה לאחר שחרור מהשפה. אילו מרכיבי התאוצה, המשיקי והצנטריפטלי, מתאפסים בנקודה זו?',
       ['Tangential acceleration only', 'Centripetal acceleration only', 'Both'], ['רק התאוצה המשיקית', 'רק התאוצה הצנטריפטלית', 'שתיהן'], 0,
       "Gravity has no tangential component at C, but speed is maximal, so inward acceleration is $\\frac{v^2}{R}=2g$.", "לכוח הכובד אין רכיב משיקי ב־C, אך גודל המהירות מרבי ולכן התאוצה הצנטריפטלית היא $\\frac{v^2}{R}=2g$."),
     q('Why does the normal force do no work?', 'מדוע כוח הנורמל אינו מבצע עבודה?',
@@ -61,7 +63,7 @@ export const quizzes = {
     q("Each spring has constant $k$. What is the effective restoring stiffness?", "קבוע הקפיץ של כל אחד מהקפיצים הוא $k$. מהו קבוע הקפיץ האפקטיבי?",
       ["$\\frac{k}{2}$", '$2k$', '$k$'], ["$\\frac{k}{2}$", '$2k$', '$k$'], 1,
       "Each contributes $-kx$, giving a total of $-2kx$.", "הכוח שמפעיל כל קפיץ הוא $-kx$ ולכן הכוח השקול הוא $-2kx$."),
-    q("Compared with a single spring of constant $k$ and the same mass, the period is…", "בהשוואה למערכת עם קפיץ יחיד שקבוע הקפיץ שלו הוא $k$ ואותה מסה, זמן המחזור במערכת שני הקפיצים…",
+    q("Compared with a single spring of constant $k$ and the same mass, the period is…", "בהשוואה למערכת עם קפיץ יחיד שקבועו $k$ וגוף בעל אותה מסה, זמן המחזור במערכת שני הקפיצים…",
       ['Twice as long', 'Unchanged', "Divided by $\\sqrt{2}$"], ['גדל פי שניים', 'ללא שינוי', "קטן פי $\\sqrt{2}$"], 2,
       "The angular frequency is $\\sqrt{\\frac{2k}{m}}$, so the period is $2\\pi\\sqrt{\\frac{m}{2k}}$.", "התדירות הזוויתית היא $\\sqrt{\\frac{2k}{m}}$, ולכן זמן המחזור הוא $2\\pi\\sqrt{\\frac{m}{2k}}$."),
     q("Walls are $2l$ apart. The mass is released from rest a distance $d$ from the right wall. What is $x(0)$, measured rightward from the midpoint?", "המרחק בין הקירות הוא $2l$. הגוף משתחרר ממנוחה במרחק $d$ מהקיר הימני. מהו $x(0)$, כאשר ראשית הצירים באמצע בין הקירות והכיוון החיובי הוא ימינה?",
@@ -100,11 +102,11 @@ export const quizzes = {
     q("Where does friction act in the table-and-slope system?", "על איזה גוף פועל כוח חיכוך במערכת השולחן והמדרון?",
       ["On both blocks because both touch a surface", "Only between the table block and the rough table", "Only on the block on the smooth slope"], ["על שני הגופים כי שניהם נוגעים במשטח", "רק על הגוף שעל השולחן המחוספס", "רק על הגוף שעל המדרון החלק"], 1,
       "The slope is smooth in this system. The table is rough, so only the table block experiences a friction force.", "המדרון במערכת זו חלק. השולחן מחוספס, ולכן כוח חיכוך פועל רק על הגוף שעל השולחן."),
-    q("While the ideal rope stays taut, how are the accelerations along the two paths related?", "מה הקשר בין גדלי התאוצות של שני הגופים, כל עוד החבל מתוח ואינו נמתח?",
+    q("While the ideal rope stays taut, how are the accelerations along the two paths related?", "מה הקשר בין גדלי התאוצות של שני הגופים, כל עוד החבל מתוח?",
       ["The heavier block has the larger acceleration", "The slope block must accelerate faster", "Their acceleration magnitudes are equal"], ["לגוף הכבד יותר יש תאוצה גדולה יותר", "הגוף שעל המדרון חייב להאיץ מהר יותר", "גדלי התאוצות שווים"], 2,
       "A fixed-length rope links the displacements. One block cannot gain speed along its path faster than the other while the rope is taut.", "מכיוון שאורך החבל קבוע, שני הגופים עוברים מרחקים שווים באותו פרק זמן. לכן גם גדלי המהירויות וגדלי התאוצות שלהם שווים."),
-    q("Why can tension be eliminated when adding the two equations along the rope?", "מדוע איברי המתיחות מצטמצמים כשמחברים את משוואות התנועה של שני הגופים?",
-      ["Its terms have opposite signs in the chosen directions", "The tension is actually zero", "The weights of the blocks are equal"], ["המתיחות שווה בשני צדי החבל ומופיעה בסימנים מנוגדים במשוואות", "המתיחות למעשה שווה לאפס", "משקלי הגופים שווים"], 0,
+    q("Why can tension be eliminated when adding the two equations along the rope?", "מדוע איברי המתיחות מתבטלים כשמחברים את משוואות התנועה של שני הגופים?",
+      ["Its terms have opposite signs in the chosen directions", "The tension is actually zero", "The weights of the blocks are equal"], ["המתיחות שווה בשני צדי הגלגלת ומופיעה בסימנים מנוגדים במשוואות", "המתיחות למעשה שווה לאפס", "משקלי הגופים שווים"], 0,
       "The same ideal-rope tension pulls the table block toward the pulley and opposes downhill motion of the slope block. The terms cancel in the combined equation, even though tension is not zero.", "המתיחות מושכת את הגוף שעל השולחן לעבר הגלגלת, ואת הגוף שעל המדרון במעלה המדרון. בבחירת הצירים הנתונה היא מופיעה בשתי המשוואות בסימנים מנוגדים, ולכן מצטמצמת בחיבורן."),
     q("The slope block is already sliding downhill. If table friction becomes stronger, what happens to its downhill acceleration?", "הגוף שעל המדרון מחליק במורד. מגדילים את החיכוך בין הגוף האחר לשולחן. כיצד תשתנה התאוצה בכיוון המורד?",
       ["It always increases", "It decreases and may become an acceleration that slows the motion", "It stays unchanged because friction acts on the other block"], ["היא תמיד גדלה", "היא קטנה, ואף עשויה להתהפך ולגרום להאטה", "היא אינה משתנה כי החיכוך פועל על הגוף האחר"], 1,
@@ -160,7 +162,7 @@ export const quizzes = {
       'זמן המעוף תלוי בתנועה האנכית. התנועה האופקית והאנכית בלתי תלויות.'),
   ],
   pulley: [
-    q('Two equal masses are released from rest. What happens?', 'משחררים ממנוחה שני גופים בעלי מסות שוות המחוברים לגלגלת. מה יקרה?',
+    q('Two equal masses are released from rest. What happens?', 'משחררים ממנוחה שני גופים בעלי מסות שוות המחוברים זה לזה בחבל העובר מעל גלגלת. מה יקרה?',
       ['Both fall', 'They remain at rest', 'One rises spontaneously'], ['שניהם ייפלו', 'שניהם יישארו במנוחה', 'אחד מהם יעלה מעצמו'], 1,
       'Equal weights balance in the ideal pulley model, giving zero acceleration.',
       'המסות שוות, ולכן הפרש המשקלים אפס ותאוצת המערכת אפס. מאחר שהגופים שוחררו ממנוחה, הם יישארו במנוחה.'),
@@ -230,7 +232,7 @@ export const quizzes = {
       ['גודל המהירות מרבי וכוח הקפיץ אפס', 'המהירות אפס וגודל כוח הקפיץ מרבי', 'גם המהירות וגם הכוח אפס'], 0,
       'At $x = 0$ the spring force is zero, but the moving mass has maximum kinetic energy.',
       'ב־$x = 0$ כוח הקפיץ אפס, אך לגוף יש מהירות ואנרגייתו הקינטית מרבית.'),
-    q('In this ideal oscillator, doubling the initial displacement changes the period how?', 'מכפילים את ההעתק ההתחלתי פי שניים. כיצד ישתנה זמן המחזור של המתנד האידאלי?',
+    q('In this ideal oscillator, doubling the initial displacement changes the period how?', 'מכפילים את גודל ההעתק ההתחלתי מנקודת שיווי המשקל. כיצד ישתנה זמן המחזור של המתנד האידאלי?',
       ['It doubles', 'It stays the same', 'It halves'], ['הוא גדל פי שניים', 'הוא אינו משתנה', 'הוא קטן לחצי'], 1,
       'The period depends on mass and spring stiffness, not amplitude, for an ideal Hooke’s-law spring.',
       'בקפיץ אידאלי המקיים את חוק הוק זמן המחזור תלוי במסה ובקבוע הקפיץ, ולא במשרעת.'),

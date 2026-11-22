@@ -137,9 +137,6 @@ function catalog(level = 'basic') {
   const grid = element('div', 'catalog-grid'), tabButtons = new Map();
   function selectLevel(next, updateUrl = true) {
     if (updateUrl && next === level) return;
-    // Keep the panel's height while switching to a shorter collection, so the
-    // browser cannot clamp a visitor's current scroll position upward.
-    if (updateUrl) panel.style.minHeight = `${Math.ceil(panel.getBoundingClientRect().height)}px`;
     level = next;
     const nextEntries = demonstrations.filter(entry => (entry.level || 'basic') === level);
     for (const [key, tab] of tabButtons) {
@@ -193,7 +190,6 @@ function catalog(level = 'basic') {
   const toolbar = element('div', 'collection-toolbar');
   toolbar.append(tabs, count);
   panel.append(headingRow, grid); collection.append(toolbar, panel);
-  window.addEventListener('resize', () => { panel.style.minHeight = ''; }, { signal });
   main.replaceChildren(hero, createAchievements({ lang, signal }), collection); prepareSketchOutlines(art);
 }
 function demoHeading(entry) {

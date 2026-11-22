@@ -83,7 +83,7 @@ def run(browser, url, artifacts=None):
     browser.command('WebDriver:SetWindowRect', {'width': 1440, 'height': 1000})
     browser.command('WebDriver:Navigate', {'url': url})
     browser.wait("document.querySelector('.experiment-card.spring') !== null")
-    assert browser.evaluate("document.querySelector('.achievements summary').textContent.includes('0 of 17')")
+    assert browser.evaluate("document.querySelector('.achievements summary').textContent.includes('0 of 19')")
     browser.evaluate("(()=>{document.querySelector('main > .achievements').scrollIntoView({block:'start'}); return true;})()")
     screenshot('physics-journey-desktop')
     browser.click('.experiment-card.spring')
@@ -196,7 +196,7 @@ def run(browser, url, artifacts=None):
               frame.style.cssText='position:fixed;inset:0 auto auto 0;width:{width}px;height:920px;border:0;z-index:9999;background:white';
               frame.src={json.dumps(url)}; document.body.append(frame); return true;
             }})()""")
-            browser.wait("document.querySelector('#phone-preview').contentDocument.querySelectorAll('main > .achievements .achievement-demo').length === 17")
+            browser.wait("document.querySelector('#phone-preview').contentDocument.querySelectorAll('main > .achievements .achievement-demo').length === 19")
             layout = browser.evaluate("""(()=>{
               const frame=document.querySelector('#phone-preview'),doc=frame.contentDocument;
               const panel=doc.querySelector('main > .achievements'), width=doc.documentElement.clientWidth;

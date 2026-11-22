@@ -795,3 +795,16 @@ button.challenge-value:focus-visible{outline:2px solid var(--green);outline-offs
 .system-svg .energy-mass-text{fill:#30261d}
 
 .stage .transport .energy-visibility-toggle[aria-pressed=true]{background:var(--accent-soft);border-color:var(--green);color:var(--green)}
+
+.system-svg .spring-reference-label {
+  font: 600 16px var(--font-sans, system-ui);
+  fill: var(--scene-ink, #203c35);
+  paint-order: stroke fill;
+  stroke: var(--canvas);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.system-svg .spring-equilibrium-label {
+  font-weight: 750;
+  fill: var(--scene-force-applied, #80501f);
+}
