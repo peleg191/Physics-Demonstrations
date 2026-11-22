@@ -76,8 +76,8 @@ function quizText(tag, className, text) {
   return node;
 }
 
-export function createQuiz({ system, lang, signal, runExperiment, pauseExperiment, resumeExperiment, observationParent, observationBefore, showObservationScene, initialMode = 'short' }) {
-  const bank = quizzes[system];
+export function createQuiz({ system, lang, signal, runExperiment, pauseExperiment, resumeExperiment, observationParent, observationBefore, showObservationScene, initialMode = 'short', course, observationReadout }) {
+  const bank = (course?.banks ?? quizzes)[system];
   let language = lang;
   const freshQuestion = () => ({ selected: null, checked: false, assisted: false, attempted: false, firstCorrect: null, revealed: false, hint: false, prediction: null, observed: [false, false], observedTimes: [null, null], explaining: false, skip: false, error: false });
   function newSession(mode = 'short') {
@@ -101,7 +101,7 @@ export function createQuiz({ system, lang, signal, runExperiment, pauseExperimen
     Object.assign(session.current, { explaining: false, checked: false, selected: null, revealed: false, observed: [false, false], observedTimes: [null, null] });
   }
   let experimentGeneration = 0, watching = false, activeRun = null;
-  function persist() { const progress = readQuizProgress(system); progress.active = session; saveQuizProgress(system, progress); }
+  function persist() { const progress = readQuizProgress(system); progress.active = session; saveQuizProgress(system, progress, bank); }
   function questionNow() { return bank.find(question => question.id === session.ids[session.index]); }
   const root = element('div', 'system-quiz');
   const launcher = button('', 'button secondary quiz-launcher');
@@ -209,10 +209,10 @@ export function createQuiz({ system, lang, signal, runExperiment, pauseExperimen
     persist();
   }
   const journey = element('div', 'quiz-journey-container');
-  const collection = createAchievements({ lang, signal });
+  const collection = createAchievements({ lang, signal, course });
   window.append(journey, collection);
   function updateJourney() {
-    journey.replaceChildren(createQuizJourney(system, language));
+    journey.replaceChildren(createQuizJourney(system, language, bank));
     const milestones = quizMilestones(system, bank);
     if (milestones.mastery && !hasQuizBadge(system)) awardQuizBadge(system);
   }
@@ -236,7 +236,7 @@ export function createQuiz({ system, lang, signal, runExperiment, pauseExperimen
     coach.root.hidden = !watching || !isChallenge || current.explaining;
     body.hidden = !coach.root.hidden;
     window.classList.toggle('is-observing', !coach.root.hidden);
-    if (isChallenge && current.prediction !== null) coach.update({ question: activeQuestion, current, lang: language, activeRun, errorText: current.error === 'changed' ? t.changedSetup : t.experimentError });
+    if (isChallenge && current.prediction !== null) coach.update({ question: activeQuestion, current, lang: language, activeRun, errorText: current.error === 'changed' ? t.changedSetup : t.experimentError, observationReadout });
     for (const { control, label } of modeButtons) { control.textContent = t[label]; control.setAttribute('aria-pressed', String(label === (session.mode === 'short' ? 'nextSet' : session.mode === 'experiments' ? 'revisit' : 'practice'))); }
     syncLayout(); close.setAttribute('aria-label', t.close);
     if (session.index === session.ids.length) {
@@ -377,9 +377,9 @@ export function createQuiz({ system, lang, signal, runExperiment, pauseExperimen
           render(); body.children[body.children.length - 2].focus({ preventScroll: true });
         }
       } catch (error) { Object.assign(current, previous.current); Object.assign(session, previous, { current }); throw error; }
-      if (outcome) recordQuizAnswer(system, question, outcome);
+      if (outcome) recordQuizAnswer(system, question, outcome, bank);
       if (completed && session.mode !== 'experiments') {
-        const saved = readQuizProgress(system); saved.sessions++; saveQuizProgress(system, saved);
+        const saved = readQuizProgress(system); saved.sessions++; saveQuizProgress(system, saved, bank);
       }
       persist();
     }, { signal });

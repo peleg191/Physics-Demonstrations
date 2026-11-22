@@ -32,8 +32,7 @@ export function readQuizProgress(system) {
   result.active = value.active && typeof value.active === 'object' ? value.active : null;
   return result;
 }
-export function saveQuizProgress(system, value) {
-  const bank = quizzes[system];
+export function saveQuizProgress(system, value, bank = quizzes[system]) {
   if (bank) {
     const challenges = bank.filter(question => question.experiment);
     // An existing perfect-quiz star carries forward as the introductory star.
@@ -49,7 +48,7 @@ export function saveQuizProgress(system, value) {
   catch { if (storage) writeBlocked.add(storage); /* Session fallback remains available. */ }
   quizProgressEvents.dispatchEvent(new Event('change'));
 }
-export function recordQuizAnswer(system, question, { correct, assisted = false, investigation = false }) {
+export function recordQuizAnswer(system, question, { correct, assisted = false, investigation = false }, bank) {
   const progress = readQuizProgress(system);
   const previous = progress.answers[question.id] ?? { attempts: 0 };
   progress.answers[question.id] = { seen: true, attempts: previous.attempts + 1,
@@ -62,7 +61,7 @@ export function recordQuizAnswer(system, question, { correct, assisted = false, 
     delete progress.review[question.topic];
   }
   if (investigation && correct && !progress.investigations.includes(question.id)) progress.investigations.push(question.id);
-  saveQuizProgress(system, progress);
+  saveQuizProgress(system, progress, bank);
 }
 export function quizQuestionPriority(progress, question) {
   const answer = progress.answers[question.id];

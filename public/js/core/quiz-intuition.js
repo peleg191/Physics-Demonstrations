@@ -1,3 +1,4 @@
+import { rotateQuizChoices } from './quiz-authoring.js';
 import { gravitySpringQuestions } from './quiz-gravity-spring.js';
 import { energyQuestions } from './quiz-energy.js';
 
@@ -393,11 +394,6 @@ export function assembleQuestions(system, existing) {
   return [...existing, ...added].map((item, index) => {
     const result = { ...item, id: `${system}-${index + 1}`, topic: item.topic ?? originalTopics[system][index], difficulty: index < 4 ? 'foundation' : index < 8 ? 'reasoning' : 'challenge' };
     if (index < existing.length && !item.feedback) return result;
-    const offset = index % item.options.en.length;
-    const rotate = values => values.slice(offset).concat(values.slice(0, offset));
-    result.options = { en: rotate(item.options.en), he: rotate(item.options.he) };
-    result.feedback = { en: rotate(item.feedback.en), he: rotate(item.feedback.he) };
-    result.correct = (item.correct - offset + item.options.en.length) % item.options.en.length;
-    return result;
+    return rotateQuizChoices(result, index % item.options.en.length);
   });
 }

@@ -5,7 +5,7 @@ import { quizMilestones, quizProgressEvents, quizStorageAvailable } from './quiz
 import { hasQuizBadge } from './quiz-badges.js';
 export const achievementCopy = {
   en: {
-    title: 'Physics journey', bronze: 'Bronze', silver: 'Silver', gold: 'Gold', help: 'How to earn stars', stars: 'Stars', saved: 'Saved on this device', visit: 'This visit only', earned: 'Earned', locked: 'Not earned yet', explorer: 'Explorer', investigator: 'Investigator', mastery: 'Mastery',
+    title: 'Mechanics journey', bronze: 'Bronze', silver: 'Silver', gold: 'Gold', help: 'How to earn stars', stars: 'Stars', saved: 'Saved on this device', visit: 'This visit only', earned: 'Earned', locked: 'Not earned yet', explorer: 'Explorer', investigator: 'Investigator', mastery: 'Mastery',
     explorerRule: 'Finish a five-question set.', investigatorRule: 'Earn Explorer, then predict, observe both setups, and explain every experiment challenge.',
     masteryRule: 'Earn Investigator, answer all ten questions without help across any number of sets, and resolve concept reviews with a different question.',
     local: 'Progress is saved in this browser. No account needed.', temporary: 'Browser storage is unavailable. Progress lasts for this visit.',
@@ -21,7 +21,7 @@ export const achievementCopy = {
     groups: ['Oscillation insight', 'Friction', 'Motion and balance', 'Circular motion', 'Physics collection complete'],
   },
   he: {
-    title: 'המסע בפיזיקה', bronze: 'ארד', silver: 'כסף', gold: 'זהב', help: 'איך משיגים כוכבים', stars: 'כוכבים', saved: 'נשמר במכשיר הזה', visit: 'לביקור הזה בלבד', earned: 'הושג', locked: 'טרם הושג', explorer: 'היכרות', investigator: 'חקירה', mastery: 'שליטה בחומר',
+    title: 'המסע במכניקה', bronze: 'ארד', silver: 'כסף', gold: 'זהב', help: 'איך משיגים כוכבים', stars: 'כוכבים', saved: 'נשמר במכשיר הזה', visit: 'לביקור הזה בלבד', earned: 'הושג', locked: 'טרם הושג', explorer: 'היכרות', investigator: 'חקירה', mastery: 'שליטה בחומר',
     explorerRule: 'השלימו מקבץ של חמש שאלות.', investigatorRule: 'השלימו את שלב ההיכרות ואת כל אתגרי הניסוי: בכל אתגר העלו השערה, הפעילו את שני המצבים וענו נכון על שאלת ההסבר.',
     masteryRule: 'השלימו את שלב החקירה וענו על כל עשר השאלות ללא עזרה, במקבץ אחד או בכמה מקבצים. בנושאים שבהם טעיתם, ענו גם על שאלה אחרת באותו נושא.',
     local: 'ההתקדמות נשמרת בדפדפן הזה. אין צורך בחשבון.', temporary: 'אחסון הדפדפן אינו זמין. ההתקדמות נשמרת לביקור הזה בלבד.',
@@ -37,8 +37,8 @@ export const achievementCopy = {
 const milestoneNames = ['explorer', 'investigator', 'mastery'];
 const tiers = ['none', 'bronze', 'silver', 'gold'];
 function tierFor(state) { return tiers[milestoneNames.filter(name => state[name]).length]; }
-export function decorateAchievementCard(node, system) {
-  node.setAttribute('data-achievement-tier', tierFor(quizMilestones(system, quizzes[system])));
+export function decorateAchievementCard(node, system, bank = quizzes[system]) {
+  node.setAttribute('data-achievement-tier', tierFor(quizMilestones(system, bank)));
 }
 const starPath = 'm12 2.5 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5L2.6 9.3l6.5-.9Z';
 function icon(kind, className = '') {
@@ -88,22 +88,22 @@ function counter(kind, value, total, label) {
 function nextRequirement(state, t) {
   return state.mastery ? t.complete : !state.explorer ? t.finish : !state.investigator ? t.investigate : t.master;
 }
-export function createQuizJourney(system, lang) {
-  const t = achievementCopy[lang], state = quizMilestones(system, quizzes[system]);
+export function createQuizJourney(system, lang, bank = quizzes[system]) {
+  const t = achievementCopy[lang], state = quizMilestones(system, bank);
   const root = element('div', 'quiz-journey');
   root.setAttribute('data-achievement-tier', tierFor(state));
   root.append(starStrip(state, t));
   const counters = element('div', 'journey-counters');
-  counters.append(counter('book', state.understood, quizzes[system].length, t.known(state.understood, quizzes[system].length)),
+  counters.append(counter('book', state.understood, bank.length, t.known(state.understood, bank.length)),
     counter('flask', state.investigations, state.challenges, t.investigated(state.investigations, state.challenges)));
-  if (state.review) counters.append(counter('review', state.review, new Set(quizzes[system].map(question => question.topic)).size, t.review(state.review)));
-  root.append(counters, progressBar(state.understood, quizzes[system].length, t.known(state.understood, quizzes[system].length)),
+  if (state.review) counters.append(counter('review', state.review, new Set(bank.map(question => question.topic)).size, t.review(state.review)));
+  root.append(counters, progressBar(state.understood, bank.length, t.known(state.understood, bank.length)),
     element('span', 'sr-only', `${t.next}: ${nextRequirement(state, t)}`));
   if (hasQuizBadge(system) && !state.mastery) root.append(element('span', 'sr-only', t.legacy));
   return root;
 }
-export function createAchievementSummary(system, lang) {
-  const t = achievementCopy[lang], state = quizMilestones(system, quizzes[system]);
+export function createAchievementSummary(system, lang, bank = quizzes[system]) {
+  const t = achievementCopy[lang], state = quizMilestones(system, bank);
   const root = element('div', 'card-achievements');
   root.setAttribute('data-achievement-tier', tierFor(state));
   root.append(starStrip(state, t));
@@ -111,13 +111,16 @@ export function createAchievementSummary(system, lang) {
   count.title = `${t.next}: ${nextRequirement(state, t)}`;
   root.append(count); return root;
 }
-export function createAchievements({ lang, signal, expanded = false }) {
+export function createAchievements({ lang, signal, expanded = false, course }) {
+  const entries = course?.entries ?? demonstrations;
+  const banks = course?.banks ?? quizzes;
   const root = element('details', 'achievements'); root.open = expanded;
   const summary = element('summary');
   const body = element('div', 'achievements-body'); root.append(summary, body);
   function update() {
     const t = achievementCopy[lang];
-    const states = demonstrations.map(entry => quizMilestones(entry.id, quizzes[entry.id]));
+    const byId = new Map(entries.map(entry => [entry.id, quizMilestones(entry.id, banks[entry.id])]));
+    const states = [...byId.values()];
     const mastered = states.filter(state => state.mastery).length;
     const collectionTier = groupStates => tiers[milestoneNames.filter(name => groupStates.every(state => state[name])).length];
     summary.setAttribute('data-achievement-tier', collectionTier(states));
@@ -127,7 +130,7 @@ export function createAchievements({ lang, signal, expanded = false }) {
     s('circle', { cx: 50, cy: 50, r: 42, class: 'journey-ring-track' }, ring);
     s('circle', { cx: 50, cy: 50, r: 42, class: 'journey-ring-fill', pathLength: 100, 'stroke-dasharray': `${mastered / states.length * 100} 100`, transform: 'rotate(-90 50 50)' }, ring);
     svgText(ring, 50, 56, `${mastered}/${states.length}`, { 'text-anchor': 'middle' });
-    summary.replaceChildren(icon('trophy'), element('span', '', t.title), ring, element('span', 'sr-only', t.overall(mastered, states.length)));
+    summary.replaceChildren(icon('trophy'), element('span', '', course?.title[lang] ?? t.title), ring, element('span', 'sr-only', t.overall(mastered, states.length)));
     ring.setAttribute('aria-hidden', 'true');
     const totals = element('div', 'journey-milestone-totals');
     for (const [index, name] of milestoneNames.entries()) {
@@ -139,29 +142,31 @@ export function createAchievements({ lang, signal, expanded = false }) {
       totals.append(row);
     }
     overview.append(totals); body.append(overview);
-    const groups = [
-      ['spring', 'double-spring', 'pendulum'],
-      ['incline', 'friction-stacked', 'friction-table', 'friction-hanging'],
-      ['basketball', 'pulley', 'elevator'],
-      ['carousel', 'rotating-tube', 'two-string', 'energy-bowl'],
-      demonstrations.map(entry => entry.id),
+    const groups = course?.groups ?? [
+      { ids: ['spring', 'double-spring', 'pendulum'], icon: 'pendulum', label: t.groups[0] },
+      { ids: ['incline', 'friction-stacked', 'friction-table', 'friction-hanging'], icon: 'friction', label: t.groups[1] },
+      { ids: ['basketball', 'pulley', 'elevator'], icon: 'motion', label: t.groups[2] },
+      { ids: ['carousel', 'rotating-tube', 'two-string', 'energy-bowl'], icon: 'orbit', label: t.groups[3] },
+      { ids: entries.map(entry => entry.id), icon: 'trophy', label: t.groups[4] },
     ];
     const collection = element('ul', 'collection-achievements');
-    groups.forEach((ids, index) => {
-      const count = ids.filter(id => states[demonstrations.findIndex(entry => entry.id === id)].mastery).length;
-      const badge = element('li', count === ids.length ? 'is-earned' : '');
-      badge.setAttribute('data-achievement-tier', collectionTier(ids.map(id => states[demonstrations.findIndex(entry => entry.id === id)])));
-      badge.title = `${t.groups[index]}: ${count}/${ids.length}`;
-      badge.append(icon(['pendulum', 'friction', 'motion', 'orbit', 'trophy'][index]), element('span', 'collection-badge-name', t.groups[index]), element('strong', '', `${count}/${ids.length}`), progressBar(count, ids.length, badge.title));
+    for (const group of groups) {
+      const groupStates = group.ids.map(id => byId.get(id));
+      const count = groupStates.filter(state => state.mastery).length;
+      const label = typeof group.label === 'string' ? group.label : group.label[lang];
+      const badge = element('li', count === groupStates.length ? 'is-earned' : '');
+      badge.setAttribute('data-achievement-tier', collectionTier(groupStates));
+      badge.title = `${label}: ${count}/${groupStates.length}`;
+      badge.append(icon(group.icon), element('span', 'collection-badge-name', label), element('strong', '', `${count}/${groupStates.length}`), progressBar(count, groupStates.length, badge.title));
       collection.append(badge);
-    });
+    }
     body.append(collection);
     const list = element('div', 'achievement-list');
-    for (const entry of demonstrations) {
+    for (const entry of entries) {
       const card = element('article', 'achievement-demo');
-      decorateAchievementCard(card, entry.id);
-      const link = element('a', '', entry.title[lang]); link.href = `#/${entry.id}`;
-      card.append(link, createQuizJourney(entry.id, lang)); list.append(card);
+      decorateAchievementCard(card, entry.id, banks[entry.id]);
+      const link = element('a', '', entry.title[lang]); link.href = entry.href ?? `#/${entry.id}`;
+      card.append(link, createQuizJourney(entry.id, lang, banks[entry.id])); list.append(card);
     }
     body.append(list);
     const rules = element('details', 'achievement-help');

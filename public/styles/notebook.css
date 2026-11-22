@@ -32,7 +32,7 @@
 [data-illustration-style=notebook] .system-svg .mass-text{fill:var(--scene-ink, #3b514a);font-family:var(--font-ui);font-weight:400}
 [data-illustration-style=notebook] .system-svg :is(.geometry-label,.velocity-label){stroke:var(--canvas)}
 [data-illustration-style=notebook] .system-svg .selectable-ball g circle{fill-opacity:.35;stroke:var(--scene-warm-edge, #a5693f);stroke-width:1.5px}
-[data-illustration-style=notebook] .system-svg>.incline-surface{fill:url(#notebook-hatching)}
+:root[data-illustration-style=notebook] .system-svg>.incline-surface{fill:url(#notebook-hatching)}
 [data-illustration-style=notebook] .system-svg>circle[fill]{fill-opacity:.3}
 [data-illustration-style=notebook] .system-svg>g>rect.mass-body{fill:url(#notebook-hatching)}
 .elevator-person-notebook{display:none}

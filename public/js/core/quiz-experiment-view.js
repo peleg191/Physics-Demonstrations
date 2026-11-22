@@ -90,7 +90,8 @@ export function createObservationCoach({ parent, before, signal, onRun, onResume
       ui.icons[index].children[0].setAttribute('d', togglesPlayback && playing ? 'M6 5h4v14H6ZM14 5h4v14h-4Z' : 'm9 5 10 7-10 7Z');
       setText(ui.statuses[index], active && !current.observed[index] ? playing ? t.running(letter) : t.paused : current.observed[index] ? t.played : t.ready);
       const elapsed = current.observedTimes?.[index];
-      setText(ui.times[index], model.question.experiment.cyclic && Number.isFinite(elapsed) ? `${format(elapsed, 2)} ${t.cycle}` : '');
+      const readout = current.observed[index] ? model.observationReadout?.(model.question, index, model.lang) : '';
+      setText(ui.times[index], readout || (model.question.experiment.cyclic && Number.isFinite(elapsed) ? `${format(elapsed, 2)} ${t.cycle}` : ''));
     });
     ui.progress.value = fraction;
     ui.progress.hidden = model.activeRun === null;

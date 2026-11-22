@@ -89,6 +89,10 @@ html:lang(he) .hero .hero-accent{font-family:inherit;font-style:normal;font-weig
   .catalog-grid{grid-template-columns:minmax(0,1fr);gap:16px}.collection-heading h2{font-size:21px}.card-image{height:210px}.card-content>p{min-height:0}.card-content{padding:20px}.collection{padding-bottom:30px}.demo-heading h1{font-size:34px;letter-spacing:-1px}.control-panel{padding:20px}.metrics{padding:14px 10px}.metric-value{font-size:20px}.metric-label{font-size:10px}.metric{padding-inline-start:8px}.transport{gap:6px}.playback{flex-wrap:wrap}.site-footer{font-size:10px}
 }
 @media(max-width:360px){.brand{max-width:140px}.site-header nav{gap:4px}.language-button{padding-inline:6px}.brand-mark{display:none}.metric-value{font-size:17px}}
+@media(max-width:600px){
+  .mechanics-header{flex-wrap:wrap}
+  .mechanics-header nav>a[href="fluids/"]{display:inline-block;padding-block:10px}
+}
 
 /* Larger stacked plots remain overlaid on the full-size system diagram. */
 .stage:not(.graphs-beside) .motion-graphs{width:34%;max-width:360px;top:44px;bottom:12px;max-height:calc(100% - 56px);padding:8px;display:flex;flex-direction:column}

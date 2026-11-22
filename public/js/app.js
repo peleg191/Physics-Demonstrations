@@ -1,62 +1,25 @@
-import { addSketchOutlines, prepareSketchOutlines } from './core/sketch.js';
-import { resolveIllustrationStyle, illustrationSource } from './core/presentation.js';
+import { createCatalogCard } from './core/catalog-card.js';
+import { prepareSketchOutlines } from './core/sketch.js';
+import { illustrationSource } from './core/presentation.js';
+import { createPresentationControls, preferredLanguage, saveLanguage } from './core/presentation-controls.js';
 import { demonstrations } from './registry.js';
 import { translator } from './core/i18n.js';
 import { element, svgElement } from './core/dom.js';
-import { createAchievements, createAchievementSummary, decorateAchievementCard } from './core/quiz-achievements.js';
-let savedStyle;
-try { savedStyle = localStorage.getItem('physics-illustration-style'); } catch { /* Storage is optional. */ }
-let illustrationStyle = ['current', 'notebook'].includes(savedStyle)
-  ? resolveIllustrationStyle(location.search, savedStyle) : resolveIllustrationStyle(location.search);
-document.documentElement.dataset.illustrationStyle = illustrationStyle;
-let lang = 'en';
-try { const saved = localStorage.getItem('physics-language'); if (saved === 'he' || saved === 'en') lang = saved; } catch { /* Storage is optional. */ }
+import { createAchievements } from './core/quiz-achievements.js';
+let lang = preferredLanguage();
 let active = null, activeEntry = null, routeVersion = 0, catalogController = null;
 const main = document.querySelector('#main');
 const languageButton = document.querySelector('#language');
-const themeButton = document.querySelector('#theme');
-const styleButton = document.querySelector('#illustration-style');
-function styleChrome() {
-  const label = lang === 'he' ? 'סגנון מחברת' : 'Notebook style';
-  styleButton.setAttribute('aria-label', label); styleButton.title = label;
-  styleButton.setAttribute('aria-pressed', String(illustrationStyle === 'notebook'));
-}
-styleButton.addEventListener('click', () => {
-  illustrationStyle = illustrationStyle === 'notebook' ? 'current' : 'notebook';
-  document.documentElement.dataset.illustrationStyle = illustrationStyle;
-  try { localStorage.setItem('physics-illustration-style', illustrationStyle); } catch { /* Storage is optional. */ }
-  // Keep explicit preview links in step with the user's button selection.
-  const url = new URL(location.href);
-  if (url.searchParams.has('style')) { url.searchParams.set('style', illustrationStyle); history.replaceState(null, '', url); }
-  for (const image of document.querySelectorAll('img[data-illustration]')) image.src = illustrationSource(image.dataset.illustration, illustrationStyle, document.documentElement.dataset.theme);
-  for (const scene of document.querySelectorAll('.system-svg, .hero-art')) addSketchOutlines(scene);
-  styleChrome();
-});
-function themeChrome() {
-  const dark = document.documentElement.dataset.theme === 'dark';
-  themeButton.setAttribute('aria-pressed', String(dark));
-  for (const image of document.querySelectorAll('img[data-illustration]')) image.src = illustrationSource(image.dataset.illustration, illustrationStyle, dark ? 'dark' : 'light');
-  themeButton.setAttribute('aria-label', lang === 'he' ? 'מצב כהה' : 'Dark mode');
-  themeButton.title = lang === 'he' ? 'מצב כהה' : 'Dark mode';
-  themeButton.innerHTML = dark
-    ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>'
-    : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.5 14A9 9 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z"/></svg>';
-  document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#151b17' : '#f3f2ec');
-}
-themeButton.addEventListener('click', () => {
-  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = theme;
-  try { localStorage.setItem('physics-theme', theme); } catch { /* Storage is optional. */ }
-  themeChrome();
-});
+const presentation = createPresentationControls();
 function chrome() {
-  themeChrome(); styleChrome();
+  presentation.update(lang);
   const t = translator(lang);
   document.documentElement.lang = lang; document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
   document.querySelector('#brand-name').textContent = t('brand');
   document.querySelector('.brand').setAttribute('aria-label', t('brand'));
   document.querySelector('#navigation').setAttribute('aria-label', t('nav'));
   document.querySelector('#catalog-link').textContent = t('collection');
+  document.querySelector('#fluids-link').textContent = t('fluids');
   document.querySelector('#skip').textContent = t('skip');
   document.querySelector('#footer-title').textContent = t('footer'); document.querySelector('#footer-note').textContent = t('footerNote');
   languageButton.textContent = lang === 'en' ? 'עברית ↗' : 'English ↗'; languageButton.lang = lang === 'en' ? 'he' : 'en';
@@ -168,22 +131,15 @@ function catalog(level = 'basic') {
   function fillGrid(nextEntries) {
     grid.replaceChildren();
     for (const entry of nextEntries) {
-      const card = element('a', `experiment-card ${entry.id}`); card.href = `#/${entry.id}`;
-      decorateAchievementCard(card, entry.id);
-      const imageArea = element('div', 'card-image'); const number = element('span', 'card-number', entry.number);
-      const image = element('img'); image.dataset.illustration = entry.illustration; image.src = illustrationSource(entry.illustration, illustrationStyle, document.documentElement.dataset.theme); image.alt = ''; image.width = 620; image.height = 280;
-      const topic = element('span', 'topic-pill', t(entry.topic)); imageArea.append(number, image, topic);
-      const content = element('div', 'card-content');
-      const titleRow = element('div', 'card-title-row');
-      titleRow.append(element('h3', '', entry.title[lang]), createAchievementSummary(entry.id, lang));
-      content.append(titleRow, element('p', '', entry.description[lang]));
-      const bottom = element('div', 'card-bottom'); const tags = element('div', 'tags');
-      for (const tag of entry.tags[lang]) tags.append(element('span', '', tag));
-      const arrow = element('span', 'card-arrow'); arrow.setAttribute('aria-hidden', 'true');
-      const arrowIcon = svgElement('svg', { viewBox: '0 0 24 24', width: 18, height: 18, focusable: 'false', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
-      svgElement('path', { d: 'M6 18 18 6M6 6h12v12' }, arrowIcon);
-      arrow.append(arrowIcon); bottom.append(tags, arrow);
-      content.append(bottom); card.append(imageArea, content); grid.append(card);
+      const image = element('img');
+      image.dataset.illustration = entry.illustration;
+      image.src = illustrationSource(entry.illustration, presentation.style, document.documentElement.dataset.theme);
+      image.alt = ''; image.width = 620; image.height = 280;
+      const { card } = createCatalogCard({
+        id: entry.id, href: `#/${entry.id}`, image, number: entry.number, topic: t(entry.topic),
+        title: entry.title[lang], description: entry.description[lang], tags: entry.tags[lang], lang,
+      });
+      grid.append(card);
     }
   }
   selectLevel(level, false);
@@ -234,7 +190,7 @@ async function route() {
 }
 languageButton.addEventListener('click', () => {
   lang = lang === 'en' ? 'he' : 'en';
-  try { localStorage.setItem('physics-language', lang); } catch { /* Optional preference. */ }
+  saveLanguage(lang);
   chrome();
   if (active) { heading?.update(); active.setLanguage(lang); }
   else route();
