@@ -35,6 +35,11 @@
 [data-illustration-style=notebook] .system-svg>.incline-surface{fill:url(#notebook-hatching)}
 [data-illustration-style=notebook] .system-svg>circle[fill]{fill-opacity:.3}
 [data-illustration-style=notebook] .system-svg>g>rect.mass-body{fill:url(#notebook-hatching)}
+.elevator-person-notebook{display:none}
+[data-illustration-style=notebook] .elevator-person-standard{display:none}
+[data-illustration-style=notebook] .elevator-person-notebook{display:inline}
+[data-illustration-style=notebook] .system-svg .elevator-head{fill:var(--scene-warm, #d3a374);stroke:var(--scene-warm, #d3a374);stroke-width:1.8px}
+[data-illustration-style=notebook] .selectable-mass:is(:focus-visible,[aria-pressed=true]) .elevator-head{stroke:var(--scene-ink, #203c35);stroke-width:4px}
 [data-illustration-style=notebook] .graph-card{border-radius:3px 6px 4px 7px}
 [data-illustration-style=notebook] .stage .motion-graphs{box-shadow:2px 3px 0 #38483d12}
 [data-illustration-style=notebook] .transport .button{border-radius:4px 8px 5px 6px}
@@ -60,3 +65,8 @@
 [data-illustration-style=notebook][data-theme=dark] .system-svg :is(.mass-text,.carousel-mass-label){fill:var(--scene-ink)}
 [data-illustration-style=notebook][data-theme=dark] .friction-body-label .friction-canvas-math{color:var(--scene-ink)}
 [data-illustration-style=notebook][data-theme=dark] .card-image{background-color:var(--canvas)}
+
+[data-illustration-style=notebook] .system-svg .energy-track{fill:url(#notebook-hatching)}
+[data-illustration-style=notebook] .energy-track-trim{stroke-width:2.5}
+[data-illustration-style=notebook] .energy-planet{fill-opacity:.36}
+[data-illustration-style=notebook] .energy-spring-coil{stroke-width:2.5}

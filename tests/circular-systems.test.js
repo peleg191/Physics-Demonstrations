@@ -95,21 +95,21 @@ for (const kind of ['rotating-tube', 'two-string', 'energy-bowl']) {
   });
 }
 
-test('bowl energy bar exchanges equal total energy, follows language and resets to potential energy', async () => {
+test('bowl energy panel shows energy conversion, localizes and resets', async () => {
   const fixture = browserFixture(); let demo;
   try {
     demo = (await demonstrations.find(entry => entry.id === 'energy-bowl').load()).mount({ root: fixture.root, lang: 'en' });
-    const bar = fixture.find(hasClass('energy-bar'));
-    const panel = fixture.find(hasClass('energy-panel')), stage = fixture.find(hasClass('stage'));
-    const transport = fixture.find(hasClass('transport'));
-    assert.equal(panel.parentNode, stage);
-    assert.ok(stage.children.indexOf(panel) < stage.children.indexOf(transport), 'energy must be visible above playback controls');
-    assert.match(bar.getAttribute('aria-label'), /Potential energy: 10.00 J; Kinetic energy: 0.00 J/);
+    const panel = fixture.find(hasClass('energy-transfer'));
+    assert.equal(panel.parentNode.parentNode.getAttribute('class'), 'system-svg');
+    const reading = key => fixture.find(hasClass('energy-transfer-value'), fixture.find(hasClass(`energy-transfer-${key}`)));
+    assert.equal(reading('gravitational').textContent, '10.00 J');
+    assert.equal(reading('kinetic').textContent, '0.00 J');
     fixture.find(node => node.tagName === 'button' && node.textContent === 'Play').dispatchEvent(new Event('click'));
     fixture.frame(0); fixture.frame(bowlState(defaults['energy-bowl'], 0).quarter * 1000);
-    assert.match(bar.getAttribute('aria-label'), /Potential energy: 0.00 J; Kinetic energy: 10.00 J/);
-    demo.setLanguage('he'); assert.match(bar.getAttribute('aria-label'), /אנרגיה קינטית: 10.00 J/);
-    demo.reset(); assert.match(bar.getAttribute('aria-label'), /אנרגיה פוטנציאלית: 10.00 J/);
+    assert.equal(reading('gravitational').textContent, '0.00 J');
+    assert.equal(reading('kinetic').textContent, '10.00 J');
+    demo.setLanguage('he'); assert.match(panel.textContent, /אנרגיה קינטית/);
+    demo.reset(); assert.equal(reading('gravitational').textContent, '10.00 J');
   } finally { demo?.dispose(); fixture.cleanup(); }
 });
 
@@ -198,30 +198,6 @@ test('tube side view follows the top-view projection and carries the selected fo
     assert.match(normalPath.getAttribute('d'), /^M 520 250 l 0 -80/);
   } finally { demo?.dispose(); fixture.cleanup(); }
 });
-
-test('energy display uses mathematical notation without visible prose in either language', async () => {
-  const fixture = browserFixture(); let demo;
-  try {
-    demo = (await demonstrations.find(entry => entry.id === 'energy-bowl').load()).mount({ root: fixture.root, lang: 'en' });
-    const panel = fixture.find(hasClass('energy-panel'));
-    const legend = fixture.find(hasClass('energy-legend'), panel);
-    assert.equal(legend.children.length, 3);
-    assert.equal(legend.children.every(reading => reading.children[0].tagName === 'math' && reading.children[0].getAttribute('display') === 'inline'), true);
-    assert.equal(fixture.find(hasClass('energy-identity'), panel), undefined);
-    assert.doesNotMatch(panel.textContent, /Energy|Potential|Kinetic|Total|zero|conserved/);
-    const reading = key => fixture.find(node => node.tagName === 'math' && node.getAttribute('aria-label')?.startsWith(`${key} =`), panel);
-    assert.equal(reading('E_k').getAttribute('aria-label'), 'E_k = 0.00 J');
-    assert.equal(reading('E_g').getAttribute('aria-label'), 'E_g = 10.00 J');
-    assert.equal(reading('E_tot').getAttribute('aria-label'), 'E_tot = 10.00 J');
-    fixture.find(node => node.tagName === 'button' && node.textContent === 'Play').dispatchEvent(new Event('click'));
-    fixture.frame(0); fixture.frame(bowlState(defaults['energy-bowl'], 0).quarter * 1000);
-    assert.equal(reading('E_k').getAttribute('aria-label'), 'E_k = 10.00 J');
-    assert.equal(reading('E_g').getAttribute('aria-label'), 'E_g = 0.00 J');
-    demo.setLanguage('he'); assert.equal(reading('E_k').getAttribute('aria-label'), 'E_k = 10.00 J');
-    assert.doesNotMatch(panel.textContent, /אנרגיה|פוטנציאלית|קינטית/);
-  } finally { demo?.dispose(); fixture.cleanup(); }
-});
-
 
 test('bowl worked solution uses zero height at A and substitutes the values at A, B and C', async () => {
   const fixture = browserFixture(); let demo;

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { setMaxListeners } from 'node:events';
 import * as pendulum from '../public/js/demos/pendulum/physics.js';
 import * as spring from '../public/js/demos/spring/physics.js';
+import * as doubleSpring from '../public/js/demos/double-spring/physics.js';
 import { demonstrations } from '../public/js/registry.js';
 import { browserFixture } from './dom-fixture.js';
 setMaxListeners(0);
@@ -20,7 +21,7 @@ for (const [name, model] of [['pendulum', pendulum], ['spring', spring]]) {
       for (const fraction of [0.13, 0.25, 0.5, 0.81, 1]) {
         const state = model.oscillatorState(params, initial.period * fraction, gravity);
         near(state.acceleration, -(initial.omega ** 2) * state.position);
-        near(state.kinetic + state.potential, initial.kinetic + initial.potential);
+        near(state.kinetic + state.potential, initial.total);
       }
       near(model.duration(params, gravity), 4 * initial.period);
       const changed = { ...params, mass: mass * 4 };
@@ -112,6 +113,46 @@ for (const name of ['spring', 'double-spring', 'pendulum']) {
       assert.doesNotMatch(svg.textContent, /NaN/);
       const force = fixture.find(n => n.tagName === 'path' && n.getAttribute('stroke') === 'var(--scene-force-weight, #9a451b)');
       assert.doesNotMatch(force.getAttribute('d'), /NaN|Infinity/);
+    } finally { demo?.dispose(); fixture.cleanup(); }
+  });
+}
+
+for (const [id, model] of [['spring', spring], ['double-spring', doubleSpring], ['pendulum', pendulum]]) {
+  test(`${id}: the energy panel tracks the quarter-cycle and can be toggled during playback`, async () => {
+    const fixture = browserFixture(); let demo;
+    try {
+      demo = (await demonstrations.find(entry => entry.id === id).load()).mount({ root: fixture.root, lang: 'en' });
+      const panel = fixture.find(node => node.id === `${id}-energy-transfer`);
+      const checkbox = fixture.find(node => node.id === `${id}-show-energy-transfer`);
+      const values = () => fixture.find(node => node.className === 'energy-transfer-flow', panel)
+        .children.map(column => fixture.find(node => node.className === 'energy-transfer-value', column).textContent);
+      const initial = model.oscillatorState(model.defaultParameters, 0, 10);
+      const total = `${initial.total.toFixed(2)} J`;
+      const toggle = fixture.find(node => node.className.includes('energy-visibility-toggle'));
+      assert.equal(checkbox.checked, false);
+      assert.equal(panel.parentNode.getAttribute('display'), 'none');
+      assert.equal(toggle.getAttribute('aria-pressed'), 'false');
+      toggle.dispatchEvent(new Event('click'));
+      assert.equal(checkbox.checked, true);
+      assert.equal(toggle.getAttribute('aria-label'), 'Hide energy transfer');
+      assert.deepEqual(values(), id === 'pendulum' ? ['0.00 J', total] : [total, '0.00 J']);
+      fixture.find(node => node.tagName === 'button' && node.textContent === 'Play').dispatchEvent(new Event('click'));
+      fixture.frame(0);
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change'));
+      assert.equal(panel.parentNode.getAttribute('display'), 'none');
+      assert.equal(toggle.getAttribute('aria-pressed'), 'false');
+      fixture.frame(initial.period * 250);
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event('change'));
+      assert.equal(panel.parentNode.getAttribute('display'), 'inline');
+      assert.equal(fixture.frames.size, 1);
+      assert.deepEqual(values(), id === 'pendulum' ? [total, '0.00 J'] : ['0.00 J', total]);
+      const amplitude = fixture.find(node => node.id === `${id}-amplitude`);
+      amplitude.value = '0';
+      amplitude.dispatchEvent(new Event('change'));
+      assert.deepEqual(values(), ['0.00 J', '0.00 J']);
+      assert.equal(fixture.find(node => node.tagName === 'strong', panel).textContent, '0.00 J');
     } finally { demo?.dispose(); fixture.cleanup(); }
   });
 }

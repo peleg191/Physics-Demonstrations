@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" fill="none" stroke="#61816b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M50 60a110 110 0 0 0 220 0" stroke-width="4"/><path d="M50 60h220M160 60v110" stroke-dasharray="4 5"/><path d="M160 60l78 78" stroke-dasharray="4 5"/><circle cx="238" cy="138" r="13" fill="#c38e60"/><path d="M75 200h100" stroke="#a56c3c" stroke-width="10"/><path d="M175 200h70" stroke="#347b86" stroke-width="10"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M54 52a106 106 0 0 0 212 0" stroke="#61816b" stroke-width="2.9"/>
+  <path d="M54 52H266M160 52V158M160 52l53 91.8" stroke="#829579" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <circle cx="160" cy="52" r="2.7" fill="#476b60"/>
+  <circle cx="266" cy="52" r="3" fill="#61816b"/>
+  <circle cx="160" cy="158" r="3" fill="#61816b"/>
+  <circle cx="213" cy="143.8" r="12" fill="#c38e60" stroke="#775c45" stroke-width="2"/>
+  <g fill="#354d46" font-family="serif" font-size="15" text-anchor="middle">
+    <text x="160" y="39">O</text>
+    <text x="266" y="39">A</text>
+    <text x="234" y="156">B</text>
+    <text x="160" y="180">C</text>
+  </g>
+  <rect x="98" y="199" width="16" height="7" rx="2" fill="#a56c3c"/>
+  <rect x="116" y="199" width="106" height="7" rx="2" fill="#347b86"/>
+</svg>

@@ -53,7 +53,7 @@ export function prepareSketchOutlines(root) {
       if (['defs', 'clippath', 'pattern', 'text'].includes(tag)) continue;
       visit(node);
       const classes = (node.getAttribute('class') || '').split(/\s+/);
-      if (classes.includes('pencil-outline') || classes.includes('ball-selection')) continue;
+      if (classes.includes('pencil-outline') || classes.includes('ball-selection') || node.getAttribute('data-sketch-dynamic') === 'true') continue;
       if (!['path', 'rect', 'circle', 'ellipse'].includes(tag)) continue;
       if (tag === 'path' && !node.getAttribute('d')) continue;
       if (node.getAttribute('stroke-dasharray') || node.getAttribute('clip-path')) continue;

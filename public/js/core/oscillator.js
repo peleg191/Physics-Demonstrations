@@ -2,6 +2,7 @@ import { prepareSketchOutlines } from './sketch.js';
 import { geometryLayer, geometryLabel, angleGuide, dimensionGuide, showInitialGeometry } from './geometry.js';
 import { motionModel } from './motion-graphs.js';
 import { physicsConfig } from '../config.js';
+import { createEnergyTransfer, energyTransferBounds } from './energy-transfer.js';
 import { createExperiment } from './experiment.js';
 import { createBodyAnalysis } from './body-analysis.js';
 import { oscillatorAnalysis } from './oscillator-analysis.js';
@@ -29,6 +30,9 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
       onChange(value) { params[spec.key] = value; reset(); } });
     controls.set(spec.key, control); api.parameters.append(control.root);
   }
+  const energyBounds = { ...energyTransferBounds, left: pendulum ? 18 : -165, top: pendulum ? 72 : 164, height: 282 };
+  const energy = createEnergyTransfer({ api, id: kind, lang, elastic: !pendulum, gravitational: pendulum,
+    bounds: energyBounds, initiallyVisible: false, onVisibilityChange: () => render(api.clock.time) });
   function reset() { paused = false; api.clock.reset(); }
   function defaults() { params = { ...defaultParameters }; for (const [key, control] of controls) control.update(params[key]); reset(); }
   function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); scene.body.focus({ preventScroll: true }); }
@@ -114,12 +118,18 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   function render(time, { updateReadouts = true } = {}) {
     if (!scene) return;
     const state = oscillatorState(params, time, gravity);
-    api.setSceneViewBox(pendulum ? `200 10 400 ${params.length * 95 + 160}` : '80 135 640 320');
-    api.setGraphObstacles(pendulum
+    const pendulumHeight = params.length * 95 + 160;
+    const frame = pendulum
+      ? energy.visible ? `0 10 600 ${Math.max(pendulumHeight, 365)}` : `200 10 400 ${pendulumHeight}`
+      : energy.visible ? '-185 135 905 320' : '80 135 640 320';
+    api.setSceneViewBox(frame);
+    const sceneObstacles = pendulum
       ? [{ left: 280, top: 65, width: 280, height: params.length * 95 + 105 }]
       : [{ left: 100, top: 170, width: 40, height: 190 },
         { left: 165, top: 260, width: 460, height: 110 },
-        { left: 370, top: 375, width: 235, height: 65 }]);
+        { left: 370, top: 375, width: 235, height: 65 }];
+    api.setGraphObstacles(energy.visible ? [energyBounds, ...sceneObstacles] : sceneObstacles);
+    energy.update(pendulum ? state : { ...state, elastic: state.potential }, { updateReadouts });
     showInitialGeometry(scene.geometry, time, api.clock.playing);
     if (time === 0 && !api.clock.playing) {
       scene.geometry.replaceChildren();
@@ -173,7 +183,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     }
   }
   function setLanguage(next) {
-    words = strings[next]; api.setLanguage(next); hint.textContent = words.hint;
+    words = strings[next]; api.setLanguage(next); energy.setLanguage(next); hint.textContent = words.hint;
     for (const spec of specs) controls.get(spec.key).localize(words[spec.key], spec.key === 'mass' ? translator(next)('kilograms') : spec.unit);
     position.localize(words.position, pendulum ? '°' : 'm'); velocity.localize(words.velocity, pendulum ? 'rad/s' : 'm/s'); period.localize(words.period, 's');
     api.modelText.textContent = words.about; api.liveMark.textContent = words.caption; render(api.clock.time);

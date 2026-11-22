@@ -1,3 +1,5 @@
+import { content as energySystems } from './demos/energy/content.js';
+
 // Register another module here; the catalog and router need no system-specific edits.
 export const demonstrations = [
   {
@@ -98,4 +100,11 @@ export const demonstrations = [
     tags: { en: ['Energy conservation', 'Circular motion'], he: ['שימור אנרגיה', 'תנועה מעגלית'] },
     load: () => import('./demos/energy-bowl/index.js'),
   },
+  ...Object.entries(energySystems).map(([id, { number, title, description }]) => ({
+    id, number, title, description, level: 'basic', topic: 'mechanics', illustration: `./assets/${id}.svg`,
+    tags: { en: ['Energy conservation'], he: ['שימור אנרגיה'] },
+    load: () => import('./demos/energy/index.js').then(({ mountEnergySystem }) => ({
+      mount: options => mountEnergySystem(id, options),
+    })),
+  })),
 ];

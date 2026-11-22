@@ -82,6 +82,8 @@ const wrongFeedback = {
 wrongFeedback['double-spring-7'] = wrongFeedback['spring-2'];
 wrongFeedback['double-spring-8'] = wrongFeedback['spring-4'];
 const quantities = {
+  height: ['Release height', 'גובה שחרור', 'm'], ratio: ['Launch speed / escape speed', 'מהירות השיגור ביחס למהירות הבריחה', ''],
+  compression: ['Spring compression', 'כיווץ הקפיץ', 'm'],
   mass: ['Mass', 'מסה', 'kg'], mass2: ['Right mass', 'מסה ימנית', 'kg'], stiffness: ['Spring stiffness', 'קבוע הקפיץ', 'N/m'],
   amplitude: ['Release displacement', 'העתק התחלתי', 'm'], length: ['Length', 'אורך', 'm'], speed: ['Release speed', 'מהירות התחלתית', 'm/s'],
   angle: ['Angle', 'זווית', '°'], acceleration: ['Upward acceleration', 'תאוצה כלפי מעלה', 'm/s²'], force: ['Applied force', 'כוח חיצוני', 'N'],
@@ -89,6 +91,9 @@ const quantities = {
   mu: ['Friction coefficient', 'מקדם חיכוך', ''], radius: ['Radius', 'רדיוס', 'm'], frequency: ['Frequency', 'תדירות', 'Hz'], releaseAngle: ['Release angle', 'זווית שחרור', '°'],
 };
 const goals = {
+  'energy-incline': ['Compare the speeds at the bottom of the ramp.', 'השוו את המהירויות בתחתית המדרון.'],
+  'escape-speed': ['Compare the escape speed and the sign of mechanical energy.', 'השוו את מהירות הבריחה ואת סימן האנרגיה המכנית.'],
+  'spring-launcher': ['Compare the speed at spring release and the maximum height.', 'השוו את המהירות בניתוק מהקפיץ ואת הגובה המרבי.'],
   spring: ['Compare the time for one full oscillation.', 'השוו את זמני המחזור בשני המצבים.'],
   'double-spring': ['Compare the time for one full oscillation.', 'השוו את זמני המחזור בשני המצבים.'],
   pendulum: ['Compare the time for one full swing and return.', 'השוו את זמני המחזור בשני המצבים.'],

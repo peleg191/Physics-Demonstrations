@@ -25,7 +25,7 @@ for (const entry of demonstrations) {
       assert.equal(play.children[0], icon);
       assert.equal(created, 0, 'ordinary animation must not allocate new DOM nodes');
       play.dispatchEvent(new Event('click'));
-      assert.equal(time.textContent, '0.03s', 'pause must show the exact current time immediately');
+      assert.equal(time.textContent, entry.id === 'escape-speed' ? '57.60s' : '0.03s', 'pause must show the exact current time immediately');
       assert.equal(fixture.frames.size, 0);
     } finally { demo?.dispose(); fixture.cleanup(); }
   });

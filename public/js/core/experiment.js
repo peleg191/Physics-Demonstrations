@@ -21,7 +21,7 @@ function labelTransport(control, label, icon) {
   control.replaceChildren(svg, element('span', '', label));
 }
 // Shared shell; only a demo knows its physical model, drawing and duration.
-export function createExperiment({ root, lang, system, duration, render, reset, defaults, motion, showQuizForces = () => {}, ignoreSceneClick = () => false, viewBox = '0 0 800 480', mobileViewBox = viewBox }) {
+export function createExperiment({ root, lang, system, duration, render, reset, defaults, motion, showQuizForces = () => {}, ignoreSceneClick = () => false, viewBox = '0 0 800 480', mobileViewBox = viewBox, timeScale = 1 }) {
   const controller = new AbortController(); const { signal } = controller;
   let currentLang = lang, t = translator(lang), statusKey = 'ready';
   const layout = element('div', 'experiment-layout');
@@ -137,6 +137,7 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
       }
     }
   } });
+  clock.setRate(timeScale);
   let sceneObstacles = [], obstacleSignature = '';
   function graphObstacles() {
     const matrix = svg.getScreenCTM?.();
@@ -157,11 +158,11 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
     return rectangles;
   }
   const graphs = motion ? createMotionGraphs({ parent: stage, panel, transport, signal, lang, duration, model: motion, time: () => clock.time, seek: seconds => clock.seek(seconds), obstacles: graphObstacles }) : null;
-  const api = { stageColumn, svg, parameters, metrics, feedback, accessible, modelText, liveMark, signal, clock,
+  const api = { stageColumn, svg, transport, parameters, metrics, feedback, accessible, modelText, liveMark, signal, clock,
     get lang() { return currentLang; },
     setPlaybackRate(value) {
       if (![1, 0.25].includes(value)) return;
-      rate.value = String(value); clock.setRate(value);
+      rate.value = String(value); clock.setRate(value * timeScale);
     },
     setGraphObstacles(rectangles) {
       const signature = JSON.stringify(rectangles);
@@ -198,10 +199,10 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
     }
     togglePlayback();
   }, { signal });
-  step.addEventListener('click', () => clock.step(), { signal });
+  step.addEventListener('click', () => clock.step(0.05 * timeScale), { signal });
   restart.addEventListener('click', () => reset(), { signal });
   defaultButton.addEventListener('click', () => defaults(), { signal });
-  rate.addEventListener('change', () => clock.setRate(Number(rate.value)), { signal });
+  rate.addEventListener('change', () => clock.setRate(Number(rate.value) * timeScale), { signal });
   const visibility = () => { if (document.hidden && clock.playing) clock.pause(); };
   document.addEventListener('visibilitychange', visibility, { signal });
   return api;

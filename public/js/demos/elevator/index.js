@@ -48,9 +48,15 @@ export function mount({ root, lang }) {
   const scaleLabel = svgText(api.svg, 320, 357, '', { class: 'scale-reading', 'text-anchor': 'middle', fill: '#fff', 'font-size': 13 });
   const person = s('g', { class: 'selectable-mass', role: 'button', tabindex: 0, 'aria-controls': 'elevator-analysis', 'aria-describedby': hint.id }, api.svg);
   s('rect', { class: 'mass-hit', x: 267, y: 175, width: 106, height: 165, rx: 25, fill: 'transparent' }, person);
-  s('circle', { class: 'mass-body', cx: 320, cy: 200, r: 22, fill: 'var(--scene-warm, #d3a374)', stroke: 'var(--scene-warm-edge, #775c45)', 'stroke-width': 2 }, person);
-  s('path', { d: 'M 300 232 Q 320 220 340 232 L 346 281 H 294 Z', fill: 'var(--scene-green, #61816b)', stroke: 'var(--scene-edge, #3c5e49)', 'stroke-width': 2 }, person);
-  s('path', { d: 'M 301 239 L 283 280 M 339 239 L 357 280 M 306 282 L 302 333 H 291 M 334 282 L 338 333 H 349', fill: 'none', stroke: 'var(--scene-warm-edge, #775c45)', 'stroke-width': 9, 'stroke-linecap': 'round' }, person);
+  const standardPerson = s('g', { class: 'elevator-person-standard', 'aria-hidden': 'true' }, person);
+  s('circle', { class: 'mass-body', cx: 320, cy: 200, r: 22, fill: 'var(--scene-warm, #d3a374)', stroke: 'var(--scene-warm-edge, #775c45)', 'stroke-width': 2 }, standardPerson);
+  s('path', { d: 'M 300 232 Q 320 220 340 232 L 346 281 H 294 Z', fill: 'var(--scene-green, #61816b)', stroke: 'var(--scene-edge, #3c5e49)', 'stroke-width': 2 }, standardPerson);
+  s('path', { d: 'M 301 239 L 283 280 M 339 239 L 357 280 M 306 282 L 302 333 H 291 M 334 282 L 338 333 H 349', fill: 'none', stroke: 'var(--scene-warm-edge, #775c45)', 'stroke-width': 9, 'stroke-linecap': 'round' }, standardPerson);
+  // Match the notebook cover's figure, shifted down with the live scale.
+  const notebookPerson = s('g', { class: 'elevator-person-notebook', transform: 'translate(0 15)', 'aria-hidden': 'true' }, person);
+  s('circle', { class: 'mass-body elevator-head', cx: 320, cy: 180, r: 24, fill: 'var(--scene-warm, #d3a374)', stroke: 'var(--scene-warm, #d3a374)', 'stroke-width': 1.8, 'fill-opacity': 0.2 }, notebookPerson);
+  s('path', { d: 'M300 215q20-12 40 0l6 60h-52Z', fill: 'var(--scene-green, #61816b)', stroke: 'var(--scene-green, #61816b)', 'stroke-width': 1.8, 'fill-opacity': 0.2 }, notebookPerson);
+  s('path', { d: 'm301 225-20 47m58-47 20 47m-52 4-7 46m33-46 7 46', fill: 'none', stroke: 'var(--scene-warm-edge, #775c45)', 'stroke-width': 2.4 }, notebookPerson);
   const forces = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, api.svg);
   const arrows = ['var(--scene-force-blue, #174d77)', 'var(--scene-force-weight, #9a451b)'].map(color => ({
     path: s('path', { stroke: color, fill: 'none', 'stroke-width': 4 }, forces),

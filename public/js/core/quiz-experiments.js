@@ -61,6 +61,12 @@ export function addQuizExperiments(banks) {
   delete banks.spring[7].experiment;
   delete banks.pendulum[5].experiment;
   const additions = [
+    ['energy-incline', 1, { angle: 30 }, { angle: 55 }],
+    ['energy-incline', 2, { height: 5 }, { height: 10 }],
+    ['escape-speed', 1, { mass: 100 }, { mass: 200 }],
+    ['escape-speed', 2, { ratio: 0.8 }, { ratio: 1.2 }],
+    ['spring-launcher', 1, { compression: 0.5 }, { compression: 1 }],
+    ['spring-launcher', 2, { mass: 2 }, { mass: 8 }],
     ['basketball', 8, { speed: 6, angle: 45 }, { speed: 9, angle: 45 }],
     ['pulley', 3, { mass1: 3, mass2: 5 }, { mass1: 6, mass2: 10 }],
     ['incline', 4, { mass: 3, angle: 20, staticFriction: 0, kineticFriction: 0 }, { mass: 3, angle: 50, staticFriction: 0, kineticFriction: 0 }],
@@ -75,6 +81,8 @@ export function addQuizExperiments(banks) {
   ];
   for (const [system, index, first, second] of additions) {
     const names = {
+      height: ['Release height', 'גובה שחרור', 'm'], ratio: ['Launch speed / escape speed', 'מהירות השיגור ביחס למהירות הבריחה', ''],
+      compression: ['Spring compression', 'כיווץ הקפיץ', 'm'],
       mass: ['Mass', 'מסה', 'kg'], mass1: ['Mass 1', 'מסה 1', 'kg'], mass2: ['Mass 2', 'מסה 2', 'kg'],
       speed: ['Initial speed', 'מהירות התחלתית', 'm/s'], angle: ['Angle', 'זווית', '°'],
       staticFriction: ['Static friction coefficient', 'מקדם חיכוך סטטי', ''], kineticFriction: ['Kinetic friction coefficient', 'מקדם חיכוך קינטי', ''],

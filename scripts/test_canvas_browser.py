@@ -9,7 +9,8 @@ import test_quiz_browser as harness
 
 SYSTEMS = ['basketball', 'pulley', 'incline', 'pendulum', 'spring', 'elevator',
            'friction-stacked', 'friction-table', 'friction-hanging', 'double-spring',
-           'carousel', 'rotating-tube', 'two-string', 'energy-bowl']
+           'carousel', 'rotating-tube', 'two-string', 'energy-bowl',
+           'energy-incline', 'escape-speed', 'spring-launcher']
 
 # Sample actual rendered SVG/MathML colors, including labels on filled bodies.
 READ_COLORS = r'''(()=>{
@@ -51,6 +52,60 @@ def run(browser, url, artifacts=None):
             light = browser.evaluate("getComputedStyle(document.querySelector('.stage')).backgroundColor")
             # SVG groups have no HTML click box in Marionette; activate their keyboard handler.
             browser.evaluate("(()=>{const body=document.querySelector('.system-svg [role=button]');body.focus();body.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));return true})()")
+            if system in ['energy-incline', 'escape-speed', 'spring-launcher']:
+                analysis = f'#{system}-analysis'
+                assert browser.evaluate(f"document.querySelector('{analysis}:not([hidden]) math') !== null")
+                browser.click(f'{analysis} .analysis-heading button')
+                assert browser.evaluate(f"document.querySelector('{analysis}').hidden")
+                browser.evaluate("document.querySelector('.selectable-mass').dispatchEvent(new MouseEvent('click',{bubbles:true}))")
+                assert browser.evaluate(f"document.querySelector('{analysis}:not([hidden]) math') !== null")
+                if system == 'escape-speed':
+                    browser.evaluate("""(() => {
+                        const planet = document.querySelector('#escape-speed-planet');
+                        planet.value = 'earth';
+                        planet.dispatchEvent(new Event('change', {bubbles: true}));
+                        return true;
+                    })()""")
+                    assert browser.evaluate("document.querySelector('.energy-scene-label').textContent") == 'Earth'
+                    browser.click('.control-panel .text-button')
+                    assert browser.evaluate("document.querySelector('.energy-scene-label').textContent") == 'Mars'
+            if system in ['spring-launcher', 'energy-incline', 'escape-speed', 'energy-bowl', 'spring', 'double-spring', 'pendulum']:
+                panel = f'#{system}-energy-transfer'
+                show = f'#{system}-show-energy-transfer'
+                icon = '.transport .energy-visibility-toggle'
+                default_on = system not in ['spring', 'double-spring', 'pendulum']
+                assert browser.evaluate(f"document.querySelector('{show}').checked") == default_on
+                assert browser.evaluate(f"document.querySelector('{panel}').closest('.system-svg') !== null")
+                assert browser.evaluate(f"document.querySelector('{panel}').getBoundingClientRect().width > 0") == default_on
+                assert browser.evaluate(f"document.querySelector('{icon}').getAttribute('aria-pressed') === String({str(default_on).lower()})")
+                browser.click(icon)
+                assert browser.evaluate(f"document.querySelector('{show}').checked") != default_on
+                assert browser.evaluate(f"document.querySelector('{panel}').getBoundingClientRect().width > 0") != default_on
+                browser.click(show)
+                assert browser.evaluate(f"document.querySelector('{icon}').getAttribute('aria-pressed') === String({str(default_on).lower()})")
+                assert browser.evaluate(f"document.querySelector('{panel}').getBoundingClientRect().width > 0") == default_on
+            if system == 'escape-speed':
+                assert browser.evaluate("""(() => {
+                    const gravity = document.querySelector('.energy-transfer-gravitational .energy-transfer-fill');
+                    const kinetic = document.querySelector('.energy-transfer-kinetic .energy-transfer-fill');
+                    return gravity.getBoundingClientRect().right <= kinetic.getBoundingClientRect().left + 1
+                        && gravity.getBoundingClientRect().width > 0 && kinetic.getBoundingClientRect().width > 0;
+                })()""")
+            if system == 'spring-launcher':
+                assert browser.evaluate("document.querySelector('.system-svg foreignObject .energy-transfer') !== null")
+                assert browser.evaluate("""(() => {
+                    const panel = document.querySelector('.energy-transfer').getBoundingClientRect();
+                    const block = document.querySelector('.mass-body').getBoundingClientRect();
+                    return panel.height > 0 && panel.right < block.left;
+                })()""")
+                fills = """[...document.querySelectorAll('.energy-transfer-fill')].map(
+                    fill=>Number(fill.style.getPropertyValue('--energy-fraction')).toFixed(2)).join(',')"""
+                assert browser.evaluate(fills) == '1.00,0.00,0.00'
+                browser.click('.transport .primary')
+                browser.wait(f"({fills}) === '0.00,1.00,0.00'")
+                browser.wait(f"({fills}) === '0.00,0.00,1.00'")
+                browser.wait("document.querySelector('.transport button:nth-child(2)').disabled")
+                assert browser.evaluate("document.querySelector('.energy-transfer-total strong').textContent") == '10.00 J'
             if system == 'spring':
                 browser.click('.transport .primary')
                 browser.wait("parseFloat(document.querySelector('.metric-value').textContent)>0")
@@ -75,7 +130,7 @@ def run(browser, url, artifacts=None):
                 if resolved['lowText'] or resolved['lowArrows']:
                     failures.append((style, system, 'resolved forces', resolved))
             assert browser.evaluate("document.querySelector('.system-svg').dataset.themeProbe==='same-scene'")
-            if artifacts and system in ['incline', 'friction-stacked', 'friction-table', 'friction-hanging', 'elevator', 'energy-bowl']:
+            if artifacts and system in ['incline', 'friction-stacked', 'friction-table', 'friction-hanging', 'elevator', 'energy-bowl', 'energy-incline', 'escape-speed', 'spring-launcher']:
                 browser.evaluate("(()=>{document.querySelector('.stage').scrollIntoView({block:'center'});return true})()")
                 output = Path(artifacts)
                 output.mkdir(parents=True, exist_ok=True)
@@ -83,7 +138,7 @@ def run(browser, url, artifacts=None):
                 (output / f'{style}-{system}-dark.png').write_bytes(base64.b64decode(data))
             browser.click('#theme')
             assert browser.evaluate("getComputedStyle(document.querySelector('.stage')).backgroundColor") == light
-        print(f'Checked all 14 {style} canvases', flush=True)
+        print(f'Checked all {len(SYSTEMS)} {style} canvases', flush=True)
     assert not failures, failures
     print('PASS: all canvases switch live with readable labels and force arrows in both styles')
     for style in ['current', 'notebook']:

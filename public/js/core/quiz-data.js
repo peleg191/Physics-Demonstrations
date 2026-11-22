@@ -1,3 +1,4 @@
+import { energyQuestions } from './quiz-energy.js';
 import { addExperimentReasoning } from './quiz-experiment-reasoning.js';
 import { addQuizFeedback } from './quiz-feedback.js';
 import { addQuizExperiments } from './quiz-experiments.js';
@@ -10,6 +11,7 @@ const q = (en, he, optionsEn, optionsHe, correct, explanationEn, explanationHe) 
 });
 
 export const quizzes = {
+  ...Object.fromEntries(Object.entries(energyQuestions).map(([system, questions]) => [system, questions.slice(0, 4)])),
   'rotating-tube': [
     q('What supplies the inward force while the body stays at a fixed radius in the rotating tube?', 'איזה כוח מחזיק את הגוף בתנועה מעגלית ברדיוס קבוע בתוך הצינור המסתובב?',
       ['Static friction', 'The upward normal force', 'A separate centripetal force'], ['חיכוך סטטי', 'כוח הנורמל, הפועל כלפי מעלה', 'כוח צנטריפטלי נפרד'], 0,

@@ -1,3 +1,5 @@
+import { energyQuestions } from './quiz-energy.js';
+
 // Each row is a distinct conceptual question. The first choice is correct;
 // assembleQuestions rotates choices so answer positions do not give a clue.
 // Wrong-choice feedback describes the misconception before the solution is revealed.
@@ -7,6 +9,7 @@ const question = (topic, en, he, answersEn, answersHe, explanationEn, explanatio
   feedback: { en: [explanationEn, ...wrongEn], he: [explanationHe, ...wrongHe] },
 });
 export const intuitionQuestions = {
+  ...Object.fromEntries(Object.entries(energyQuestions).map(([system, questions]) => [system, questions.slice(4)])),
   spring: [
     question('motion', 'At the right turning point, what happens just after release?', 'משחררים את הגוף ממנוחה בנקודת המפנה הימנית. מה יקרה מיד לאחר השחרור?',
       ['It starts moving left', 'It stays still because its speed is zero', 'It first moves farther right'], ['הגוף מתחיל לנוע שמאלה', 'הגוף נשאר במנוחה כי מהירותו אפס', 'הגוף נע תחילה עוד ימינה'],
@@ -387,7 +390,7 @@ export function assembleQuestions(system, existing) {
   if (!added) throw new Error(`Missing intuition bank: ${system}`);
   return [...existing, ...added].map((item, index) => {
     const result = { ...item, id: `${system}-${index + 1}`, topic: item.topic ?? originalTopics[system][index], difficulty: index < 4 ? 'foundation' : index < 8 ? 'reasoning' : 'challenge' };
-    if (index < existing.length) return result;
+    if (index < existing.length && !item.feedback) return result;
     const offset = index % item.options.en.length;
     const rotate = values => values.slice(offset).concat(values.slice(0, offset));
     result.options = { en: rotate(item.options.en), he: rotate(item.options.he) };

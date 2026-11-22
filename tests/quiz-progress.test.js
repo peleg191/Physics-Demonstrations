@@ -189,8 +189,8 @@ test('milestones require observation and independent concept review; earned mile
     recordQuizAnswer('spring', missed, { correct: false });
     assert.equal(quizMilestones('spring', bank).mastery, true, 'later practice cannot revoke achievements');
     const view = createAchievements({ lang: 'en', signal: new AbortController().signal });
-    assert.match(view.textContent, /1 of 14 demonstrations mastered/);
-    view.setLanguage('he'); assert.match(view.textContent, /שליטה ב־1 מתוך 14/);
+    assert.match(view.textContent, new RegExp(`1 of ${demonstrations.length} demonstrations mastered`));
+    view.setLanguage('he'); assert.match(view.textContent, new RegExp(`שליטה ב־1 מתוך ${demonstrations.length}`));
   } finally { fixture.cleanup(); }
 });
 
@@ -244,7 +244,7 @@ test('collection achievements and the final award can all be earned', () => {
       state.investigations = bank.filter(question => question.experiment).map(question => question.id);
       saveQuizProgress(entry.id, state);
     }
-    assert.match(view.textContent, /14 of 14 demonstrations mastered/);
+    assert.match(view.textContent, new RegExp(`${demonstrations.length} of ${demonstrations.length} demonstrations mastered`));
     const groups = descendants(view).filter(node => node.tagName === 'li' && node.className === 'is-earned');
     assert.ok(groups.some(node => node.textContent.includes('Physics collection complete')));
     assert.equal(groups.filter(node => /Oscillation insight|Friction|Motion and balance|Circular motion|Physics collection complete/.test(node.textContent)).length, 5);
@@ -294,8 +294,8 @@ test('collapsed journey keeps its progress ring beside the title', () => {
     const ring = descendants(summary).find(node => node.getAttribute('class') === 'journey-ring');
     assert.ok(ring);
     assert.equal(ring.parentNode, summary);
-    assert.equal(ring.getAttribute('aria-label'), '0 of 14 demonstrations mastered');
-    assert.match(ring.textContent, /0\/14/);
+    assert.equal(ring.getAttribute('aria-label'), `0 of ${demonstrations.length} demonstrations mastered`);
+    assert.match(ring.textContent, new RegExp(`0/${demonstrations.length}`));
     view.open = true;
     assert.ok(view.children[0].children.includes(ring));
     view.setLanguage('he');
@@ -311,7 +311,7 @@ test('visual achievements use three stars, compact counters, and requirements hi
     const view = createAchievements({ lang: 'en', signal: controller.signal, expanded: true });
     assert.equal(view.open, true);
     assert.ok(descendants(view).some(node => node.getAttribute('class') === 'journey-ring'));
-    assert.equal(descendants(view).filter(hasClass('achievement-demo')).length, 14);
+    assert.equal(descendants(view).filter(hasClass('achievement-demo')).length, demonstrations.length);
     assert.equal(Boolean(find(view, 'achievement-help').open), false);
     assert.equal(descendants(view).filter(hasClass('journey-next')).length, 0);
     const tile = descendants(view).filter(hasClass('achievement-demo')).find(tile => tile.children[0].href === '#/pulley');

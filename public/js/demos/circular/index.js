@@ -1,6 +1,6 @@
 import { createExperiment } from '../../core/experiment.js';
 import { createBodyAnalysis } from '../../core/body-analysis.js';
-import { createEnergyBar } from '../../core/energy-bar.js';
+import { createEnergyTransfer, energyTransferBounds } from '../../core/energy-transfer.js';
 import { format } from '../../core/i18n.js';
 import { parameter, metric } from '../../core/controls.js';
 import { element, svgElement as s, svgText, setText } from '../../core/dom.js';
@@ -24,23 +24,20 @@ const specsFor = kind => [
     ? [{ key: 'releaseAngle', symbol: 'θ_0', min: 10, max: 90, step: 1, unit: '°' }]
     : [{ key: 'frequency', symbol: 'f', min: 0.05, max: 5, step: 0.05, unit: 'Hz' }]),
 ];
+const bowlEnergyBounds = { ...energyTransferBounds, left: -220 };
+
 export function mountCircularSystem(kind, { root, lang }) {
   const bowl = kind === 'energy-bowl', tube = kind === 'rotating-tube', gravity = physicsConfig.gravity;
   let params = { ...modelDefaults[kind] }, words = wordsFor(kind, lang), selected = false, paused = false, resolved = false, ready = false, geometrySignature = '';
   const model = models[kind], controls = new Map(), specs = specsFor(kind);
   const api = createExperiment({ root, lang, showQuizForces: () => { selected = true; }, system: kind, render, reset, defaults: restore,
+    viewBox: bowl ? '-246 0 1046 480' : undefined,
     duration: () => duration(kind, params, gravity),
     motion: () => motionModel(time => { const state = model(params, time, gravity); return [[state.position], [state.velocity], [state.acceleration]]; },
       { note: bowl ? 'graphBowlNote' : 'graphCircularNote' }),
   });
   api.svg.setAttribute('role', 'group');
   const hint = element('p', 'analysis-hint'); hint.id = `${kind}-hint`; api.stageColumn.append(hint);
-  const energy = bowl ? createEnergyBar({ parent: api.stageColumn, words }) : null;
-  if (energy) {
-    const stage = api.svg.parentNode;
-    const transport = [...stage.children].find(node => node.className === 'transport');
-    stage.insertBefore(energy.root, transport);
-  }
   const analysis = createBodyAnalysis({ parent: api.stageColumn, signal: api.signal, id: `${kind}-analysis`, onClose: close });
   for (const spec of specs) {
     const control = parameter({ ...spec, id: `${kind}-${spec.key}`, label: words[spec.key], value: params[spec.key], signal: api.signal,
@@ -65,6 +62,8 @@ export function mountCircularSystem(kind, { root, lang }) {
       resolved = resolveCheckbox.checked; resolveNote.hidden = !resolved; render(api.clock.time);
     }, { signal: api.signal });
   }
+  const energy = bowl ? createEnergyTransfer({ api, id: kind, lang, bounds: bowlEnergyBounds,
+    onVisibilityChange: () => render(api.clock.time) }) : null;
   const metricSpecs = bowl ? [['speed', 'm/s', 'v'], ['centripetal', 'm/s²', 'a_r'], ['tangential', 'm/s²', 'a_t'], ['normal', 'N', 'N']]
     : tube ? [['required', 'N', 'f_s'], ['limit', 'N', 'f_s,max'], ['maximumFrequency', 'Hz', 'f_max'], ['maximumRadius', 'm', 'r_max']]
       : [['radius', 'm', 'r'], ['speed', 'm/s', 'v'], ['upper', 'N', 'T_1'], ['lower', 'N', 'T_2']];
@@ -153,6 +152,7 @@ export function mountCircularSystem(kind, { root, lang }) {
     const state = model(params, time, gravity), c = Math.cos(state.phase || 0), sn = Math.sin(state.phase || 0);
     // Protect the full motion envelope so opening graphs mid-cycle is stable.
     api.setGraphObstacles(bowl ? [
+      ...(energy.visible ? [bowlEnergyBounds] : []),
       { left: 155, top: 110, width: 495, height: 290 },
       { left: 475, top: 390, width: 160, height: 35 },
       ...(selected || resolved ? [{ left: 100, top: 130, width: 600, height: 310 }] : []),
@@ -272,7 +272,7 @@ export function mountCircularSystem(kind, { root, lang }) {
     for (const item of viewLabels) setText(item.node, words[item.key]);
     hint.textContent = words.hint; api.modelText.textContent = words.about; api.liveMark.textContent = words.caption;
     if (bowl) { resolveText.textContent = words.resolveForces; resolveNote.textContent = words.resolveNote; }
-    energy?.setLanguage(words); render(api.clock.time);
+    energy?.setLanguage(next); render(api.clock.time);
   }
   prepareSketchOutlines(api.svg); ready = true; setLanguage(lang); api.clock.reset();
   return { reset, setLanguage, dispose: () => api.dispose() };
