@@ -31,7 +31,12 @@ export function latexExpression(source) {
         const text = source.slice(start, position++);
         return [command === 'text' ? 'mtext' : 'mi', { mathvariant: 'normal' }, text];
       }
-      if (['left', 'right'].includes(command)) return atom();
+      if (command === 'left') {
+        const opening = atom();
+        const contents = sequence('\\right');
+        position += '\\right'.length;
+        return row(opening, contents, atom());
+      }
       if (['quad', 'qquad'].includes(command)) return ['mspace', { width: command === 'quad' ? '1em' : '2em' }];
       if ([',', ';', '!', ' '].includes(command)) return ['mspace', { width: command === '!' ? '0em' : '0.2em' }];
       if (!symbols[command]) throw new Error(`Unsupported authored LaTeX command: ${command}`);
@@ -47,7 +52,7 @@ export function latexExpression(source) {
   function sequence(end) {
     const children = [];
     while (position < source.length) {
-      space(); if (position >= source.length || source[position] === end) break;
+      space(); if (position >= source.length || (end && source.startsWith(end, position))) break;
       let base = atom(), lower, upper;
       space();
       while (source[position] === '_' || source[position] === '^') {
@@ -60,7 +65,7 @@ export function latexExpression(source) {
       else if (upper) base = ['msup', base, upper];
       children.push(base);
     }
-    if (end && source[position] !== end) throw new Error('Unclosed authored LaTeX group');
+    if (end && !source.startsWith(end, position)) throw new Error('Unclosed authored LaTeX group');
     return row(...children);
   }
   return sequence();

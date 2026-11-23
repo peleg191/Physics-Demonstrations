@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="../styles/notebook.css">
   <link rel="stylesheet" href="./fluids.css">
   <script type="module" src="./page.js"></script>
+  <link rel="stylesheet" href="../styles/subject-navigation.css">
+  <link rel="stylesheet" href="../styles/analysis-tabs.css">
 </head>
 <body>
   <header class="site-header fluids-header">
@@ -24,16 +26,19 @@
       <button class="language-button" type="button" id="language" lang="he">עברית</button>
     </nav>
   </header>
-  <main class="hydro" tabindex="-1">
-    <div id="hydro-home" hidden></div>
-    <div id="hydro-demo" hidden>
-      <header class="demo-heading">
-        <a class="back-link" id="hydro-back" href="#/">← Fluid mechanics collection</a>
-        <h1 id="title">Fluid mechanics</h1>
-      </header>
-      <div id="hydro-achievements"></div>
-      <section id="system" aria-labelledby="system-title"></section>
-    </div>
-  </main>
+  <div class="subject-layout">
+    <div id="subject-sidebar" class="subject-sidebar"></div>
+    <main class="hydro" tabindex="-1">
+      <div id="hydro-home" hidden></div>
+      <div id="hydro-demo" hidden>
+        <header class="demo-heading">
+          <a class="back-link" id="hydro-back" href="#/">← Fluid mechanics collection</a>
+          <h1 id="title">Fluid mechanics</h1>
+        </header>
+        <div id="hydro-achievements"></div>
+        <section id="system" aria-labelledby="system-title"></section>
+      </div>
+    </main>
+  </div>
 </body>
 </html>

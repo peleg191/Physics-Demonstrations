@@ -124,7 +124,7 @@ def run(browser, url, artifacts=None):
         browser.click('.coach-next')
         browser.wait("!document.querySelector('.quiz-window').hidden")
         assert browser.evaluate("document.querySelector('.quiz-options legend').textContent.startsWith('Why')")
-        reason_correct = {'spring-2': 1, 'spring-4': 0}[question_id]
+        reason_correct = {'spring-2': 0, 'spring-4': 2}[question_id]
         browser.click(f'.quiz-options input[value="{reason_correct}"]')
         if challenge == 0:
             screenshot('challenge-explain-desktop')

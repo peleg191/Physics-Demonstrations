@@ -4,16 +4,17 @@ const shared = {
   en: { mass: 'Mass', height: 'Release height', angle: 'Ramp angle', ratio: 'Launch speed / escape speed', planet: 'Planet', mars: 'Mars', earth: 'Earth',
     stiffness: 'Spring stiffness', compression: 'Compression', speed: 'Current speed', finalSpeed: 'Speed at the bottom', escapeSpeed: 'Escape speed',
     launchSpeed: 'Speed at spring release', peak: 'Maximum height', kinetic: 'Kinetic energy', potential: 'Potential energy', total: 'Mechanical energy',
-    block: 'Block', craft: 'Spacecraft', close: 'Close', paused: 'Playback paused for analysis.', hint: 'Select the moving body to see the worked solution.' },
+    block: 'Block', craft: 'Spacecraft', close: 'Close', paused: 'Playback paused for analysis.', hint: 'Select the moving body to see the equations.', workedExample: 'Worked example' },
   he: { mass: 'מסה', height: 'גובה שחרור', angle: 'זווית המדרון', ratio: 'מהירות השיגור ביחס למהירות הבריחה', planet: 'כוכב לכת', mars: 'מאדים', earth: 'כדור הארץ',
     stiffness: 'קבוע הקפיץ', compression: 'כיווץ', speed: 'מהירות רגעית', finalSpeed: 'מהירות בתחתית המדרון', escapeSpeed: 'מהירות בריחה',
     launchSpeed: 'מהירות בניתוק מהקפיץ', peak: 'גובה מרבי', kinetic: 'אנרגיה קינטית', potential: 'אנרגיה פוטנציאלית', total: 'אנרגיה מכנית',
-    block: 'גוף', craft: 'חללית', close: 'סגירה', paused: 'ההדגמה הושהתה לצורך ניתוח.', hint: 'בחרו בגוף הנע כדי לראות את הפתרון.' },
+    block: 'גוף', craft: 'חללית', close: 'סגירה', paused: 'ההדגמה הושהתה לצורך ניתוח.', hint: 'בחרו בגוף הנע כדי לראות את המשוואות.', workedExample: 'דוגמה פתורה' },
 };
 
 export const content = {
   'energy-incline': {
     number: '15',
+    exampleStart: 2,
     title: { en: 'Energy on a frictionless incline', he: 'אנרגיה במדרון חלק' },
     description: { en: 'Release a block from rest and use energy conservation to predict its speed at the bottom.', he: 'משחררים גוף ממנוחה ומחשבים את מהירותו בתחתית המדרון בעזרת שימור אנרגיה.' },
     note: { en: 'The block starts from rest. The track is frictionless and gravitational potential energy is zero at the bottom.', he: 'הגוף מתחיל ממנוחה. המדרון חלק והאנרגיה הפוטנציאלית הכבידתית מתאפסת בתחתיתו.' },
@@ -32,6 +33,7 @@ export const content = {
   },
   'escape-speed': {
     number: '16',
+    exampleStart: 3,
     title: { en: 'Escape speed from Mars', he: 'מהירות הבריחה ממאדים' },
     description: { en: 'Launch from Mars or Earth and see how the sign of mechanical energy determines whether a spacecraft escapes.', he: 'משגרים חללית ממאדים או מכדור הארץ ובודקים כיצד סימן האנרגיה המכנית קובע אם החללית תברח.' },
     note: { en: 'The spacecraft coasts radially outward under the gravity of one planet. The view follows the outbound leg up to five planetary radii. At normal playback, one real second equals 1,800 simulated seconds.', he: 'החללית נעה בכיוון רדיאלי בהשפעת הכבידה של כוכב לכת אחד. התצוגה עוקבת אחר ההתרחקות עד למרחק של חמישה רדיוסים ממרכזו. בקצב הרגיל, שנייה אחת בתצוגה שווה ל־1,800 שניות בהדמיה.' },

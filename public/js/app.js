@@ -6,6 +6,8 @@ import { demonstrations } from './registry.js';
 import { translator } from './core/i18n.js';
 import { element, svgElement } from './core/dom.js';
 import { createAchievements } from './core/quiz-achievements.js';
+import { renderSubjectNavigation } from './core/subject-navigation.js';
+import './core/drawer-motion.js';
 let lang = preferredLanguage();
 let active = null, activeEntry = null, routeVersion = 0, catalogController = null;
 const main = document.querySelector('#main');
@@ -24,6 +26,7 @@ function chrome() {
   document.querySelector('#footer-title').textContent = t('footer'); document.querySelector('#footer-note').textContent = t('footerNote');
   languageButton.textContent = lang === 'en' ? 'עברית ↗' : 'English ↗'; languageButton.lang = lang === 'en' ? 'he' : 'en';
   document.title = `${activeEntry ? activeEntry.title[lang] + ' · ' : ''}${t('brand')}`;
+  renderSubjectNavigation({ subject: 'mechanics', demoId: activeEntry?.id, lang });
 }
 function catalog(level = 'basic') {
   catalogController = new AbortController();

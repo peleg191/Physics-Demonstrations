@@ -1,3 +1,4 @@
+import { markDiagramTerm } from '../../core/analysis-highlights.js';
 import { physicsConfig } from '../../config.js';
 import { createExperiment } from '../../core/experiment.js';
 import { parameter, metric } from '../../core/controls.js';
@@ -155,7 +156,7 @@ export function mountSystem(kind, { root, lang }) {
   function select(index) {
     paused = api.clock.playing;
     if (paused) api.clock.pause();
-    selected = index; render(api.clock.time);
+    selected = index; analysis.reveal(); render(api.clock.time);
   }
   function close() {
     const previous = selected; selected = null; paused = false; analysis.hide(); render(api.clock.time);
@@ -324,6 +325,7 @@ export function mountSystem(kind, { root, lang }) {
             if (force.id === 'friction' || force.id === 'floor') labelX = Math.min(-82, ox + dx * 0.7 - 16);
           }
         }
+        markDiagramTerm(group, force.latex);
         label.update(force.latex, labelX, labelY);
       });
       if (api.clock.playing) paused = false;

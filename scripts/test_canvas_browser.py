@@ -15,10 +15,19 @@ SYSTEMS = ['basketball', 'pulley', 'incline', 'pendulum', 'spring', 'elevator',
 # Sample actual rendered SVG/MathML colors, including labels on filled bodies.
 READ_COLORS = r'''(()=>{
  const svg=document.querySelector('.system-svg'), stage=document.querySelector('.stage');
- const rgb=value=>value.match(/[\d.]+/g).slice(0,3).map(Number);
+ const rgb=value=>{
+   const channels=value.match(/^rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)/);
+   if(!channels) throw new Error(`Expected a computed RGB color, got ${value}`);
+   return channels.slice(1).map(Number);
+ };
  const lum=color=>rgb(color).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
  const contrast=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
  const background=getComputedStyle(stage).backgroundColor;
+ const surfaceColor=el=>{
+   const fill=getComputedStyle(el).fill;
+   // Notebook hatching is transparent between pencil strokes.
+   return fill.includes('#notebook-hatching')?background:fill;
+ };
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'};
  const text=[...svg.querySelectorAll('text,.friction-canvas-math')].filter(el=>visible(el)&&el.textContent.trim());
  const lowText=text.flatMap(el=>{
@@ -27,14 +36,14 @@ READ_COLORS = r'''(()=>{
    const filled=body?.querySelector('.mass-body');
    if(filled&&!el.classList.contains('force-label')&&!document.documentElement.dataset.illustrationStyle.includes('notebook')) bg=getComputedStyle(filled).fill;
    const surface=svg.querySelector('.incline-surface,.friction-ground');
-   if(surface&&el.closest('.incline-angle,.friction-angle-label')) bg=getComputedStyle(surface).fill;
+   if(surface&&el.closest('.incline-angle,.friction-angle-label')) bg=surfaceColor(surface);
    if(el.classList.contains('scale-reading')) bg=getComputedStyle(svg.querySelector('rect[y="340"]')).fill;
    const color=getComputedStyle(el)[el.tagName==='text'?'fill':'color'];
    const ratio=contrast(color,bg);
    return ratio<4.5?[{text:el.textContent,color,bg,ratio}]:[];
  });
  const arrows=[...svg.querySelectorAll('.canvas-forces path[stroke],.canvas-forces line[stroke],[stroke*="--scene-force-"]')].filter(visible);
- const brightSurfaces=[...svg.querySelectorAll('.incline-surface,.friction-ground')].filter(visible).filter(el=>lum(getComputedStyle(el).fill)>.15).map(el=>({class:el.getAttribute('class'),fill:getComputedStyle(el).fill}));
+ const brightSurfaces=[...svg.querySelectorAll('.incline-surface,.friction-ground')].filter(visible).filter(el=>lum(surfaceColor(el))>.15).map(el=>({class:el.getAttribute('class'),fill:surfaceColor(el)}));
  return {background,luminance:lum(background),lowText,brightSurfaces,lowArrows:arrows.filter(el=>contrast(getComputedStyle(el).stroke,background)<3).map(el=>getComputedStyle(el).stroke),textCount:text.length};
 })()'''
 
@@ -43,15 +52,25 @@ def run(browser, url, artifacts=None):
     browser.command('WebDriver:NewSession', {'capabilities': {'alwaysMatch': {'acceptInsecureCerts': True}}})
     browser.command('WebDriver:SetWindowRect', {'width': 1440, 'height': 1000})
     failures = []
+    def wait_for_panel_width():
+        browser.wait("!document.querySelector('.experiment-layout').getAnimations().some(animation => animation.transitionProperty === 'grid-template-columns')")
+
+    def show_parameters():
+        browser.click('.experiment-tabs [role=tab]:first-child')
+        wait_for_panel_width()
+
     for style in ['current', 'notebook']:
         for system in SYSTEMS:
             browser.command('WebDriver:Navigate', {'url': f'{url}?style={style}#/{system}'})
-            browser.wait("document.querySelector('.system-svg [role=button]') !== null")
+            browser.wait(f"!!document.querySelector('#{system}-analysis') && !!document.querySelector('.system-svg [role=button]')")
             if browser.evaluate("document.documentElement.dataset.theme") != 'light':
                 browser.click('#theme')
             light = browser.evaluate("getComputedStyle(document.querySelector('.stage')).backgroundColor")
             # SVG groups have no HTML click box in Marionette; activate their keyboard handler.
             browser.evaluate("(()=>{const body=document.querySelector('.system-svg [role=button]');body.focus();body.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));return true})()")
+            assert browser.evaluate("document.querySelector('.experiment-tabs [role=tab]:last-child').getAttribute('aria-selected') === 'true'")
+            assert browser.evaluate("!!document.querySelector('.experiment-analysis-panel .body-analysis:not([hidden])')")
+            wait_for_panel_width()
             if system in ['energy-incline', 'escape-speed', 'spring-launcher']:
                 analysis = f'#{system}-analysis'
                 assert browser.evaluate(f"document.querySelector('{analysis}:not([hidden]) math') !== null")
@@ -60,6 +79,7 @@ def run(browser, url, artifacts=None):
                 browser.evaluate("document.querySelector('.selectable-mass').dispatchEvent(new MouseEvent('click',{bubbles:true}))")
                 assert browser.evaluate(f"document.querySelector('{analysis}:not([hidden]) math') !== null")
                 if system == 'escape-speed':
+                    show_parameters()
                     browser.evaluate("""(() => {
                         const planet = document.querySelector('#escape-speed-planet');
                         planet.value = 'earth';
@@ -81,6 +101,7 @@ def run(browser, url, artifacts=None):
                 browser.click(icon)
                 assert browser.evaluate(f"document.querySelector('{show}').checked") != default_on
                 assert browser.evaluate(f"document.querySelector('{panel}').getBoundingClientRect().width > 0") != default_on
+                show_parameters()
                 browser.click(show)
                 assert browser.evaluate(f"document.querySelector('{icon}').getAttribute('aria-pressed') === String({str(default_on).lower()})")
                 assert browser.evaluate(f"document.querySelector('{panel}').getBoundingClientRect().width > 0") == default_on
@@ -125,6 +146,7 @@ def run(browser, url, artifacts=None):
             assert colors['textCount'] > 0
             assert browser.evaluate("document.querySelector('.metric-value').textContent") == time_before
             if system in ['incline', 'energy-bowl']:
+                show_parameters()
                 browser.click(f'#{system}-resolve-forces')
                 resolved = browser.evaluate(READ_COLORS)
                 if resolved['lowText'] or resolved['lowArrows']:

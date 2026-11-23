@@ -1,3 +1,4 @@
+import { markDiagramTerm } from '../../core/analysis-highlights.js';
 import { createExperiment } from '../../core/experiment.js';
 import { createBodyAnalysis } from '../../core/body-analysis.js';
 import { parameter, metric } from '../../core/controls.js';
@@ -59,6 +60,10 @@ export function mount({ root, lang }) {
   const forceLayer = s('g', { 'pointer-events': 'none' }, api.svg);
   const arrows = ['var(--scene-force-blue, #174d77)', 'var(--scene-force-weight, #9a451b)', 'var(--scene-force-blue, #174d77)', 'var(--scene-green, #61816b)'].map(color => s('path', { stroke: color, 'stroke-width': 3, fill: 'none' }, forceLayer));
   const labels = ['T', 'mg', 'T sin α', 'v'].map(label => svgText(forceLayer, 0, 0, label, { 'text-anchor': 'middle' }));
+  ['T', 'mg', 'T', 'v'].forEach((term, index) => {
+    markDiagramTerm(arrows[index], term);
+    markDiagramTerm(labels[index], term);
+  });
   const initialGeometry = geometryLayer(api.svg);
   let geometrySignature = '';
   function arrow(index, x, y, dx, dy) {
@@ -69,7 +74,7 @@ export function mount({ root, lang }) {
   function reset() { paused = false; api.clock.reset(); }
   function defaults() { params = { ...defaultParameters }; for (const [key, control] of controls) control.update(params[key]); reset(); }
   function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); balls[0].focus({ preventScroll: true }); }
-  function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; render(api.clock.time); }
+  function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; analysis.reveal(); render(api.clock.time); }
   root.addEventListener('keydown', event => { if (event.key === 'Escape' && selected && !event.defaultPrevented) { event.preventDefault(); close(); } }, { signal: api.signal });
   function render(time, { updateReadouts = true } = {}) {
     if (!ready) return;

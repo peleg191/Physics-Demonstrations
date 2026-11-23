@@ -1,3 +1,4 @@
+import { markDiagramTerm } from '../../core/analysis-highlights.js';
 import { prepareSketchOutlines } from '../../core/sketch.js';
 import { motionModel } from '../../core/motion-graphs.js';
 import { physicsConfig } from '../../config.js';
@@ -28,7 +29,7 @@ export function mount({ root, lang }) {
   function selectBody(body) {
     pausedForAnalysis = api.clock.playing;
     if (api.clock.playing) api.clock.pause();
-    selected = body; render(api.clock.time);
+    selected = body; analysis.reveal(); render(api.clock.time);
   }
   root.addEventListener('keydown', event => {
     if (event.key === 'Escape' && selected && !event.defaultPrevented) { event.preventDefault(); closeAnalysis(); }
@@ -122,6 +123,7 @@ export function mount({ root, lang }) {
         head.setAttribute('fill', color);
         label.setAttribute('x', labelSide * 16); label.setAttribute('y', start + force.direction * Math.max(12, length / 2));
         label.setAttribute('text-anchor', labelSide < 0 ? 'end' : 'start');
+        markDiagramTerm(label.parentNode, force.symbol);
         label.textContent = `${force.symbol} = ${format(force.magnitude, 1)} N`;
       });
     }

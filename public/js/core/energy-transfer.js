@@ -1,5 +1,6 @@
 import { button, element, setText, svgElement } from './dom.js';
 import { format } from './i18n.js';
+import { markDiagramTerm } from './analysis-highlights.js';
 
 const entries = [
   { key: 'elastic', icon: 'M3 20V7m0 7h4l2-5 3 10 3-10 3 10 2-5h4m0-5h7v10h-7z' },
@@ -27,6 +28,7 @@ export function createEnergyTransfer({ api, id, lang, elastic = false, gravitati
   const title = element('h3'); title.id = `${root.id}-title`;
   root.setAttribute('aria-labelledby', title.id);
   const total = element('span', 'energy-transfer-total');
+  markDiagramTerm(total, 'Ei', 'Ef');
   const totalLabel = element('span');
   const totalValue = element('strong'); totalValue.dir = 'ltr';
   total.append(totalLabel, totalValue);
@@ -35,6 +37,9 @@ export function createEnergyTransfer({ api, id, lang, elastic = false, gravitati
   const enabled = { elastic, kinetic: true, gravitational };
   const readings = entries.filter(({ key }) => enabled[key]).map(({ key, icon }) => {
     const column = element('div', `energy-transfer-column energy-transfer-${key}`);
+    if (key === 'elastic') markDiagramTerm(column, 'EA');
+    if (key === 'kinetic') markDiagramTerm(column, 'EB');
+    if (key === 'gravitational') markDiagramTerm(column, 'EC', 'U', 'mgh');
     const diagram = svgElement('svg', { viewBox: '0 0 34 29', 'aria-hidden': 'true', class: 'energy-transfer-icon' });
     svgElement('path', { d: icon, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.6,
       'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, diagram);

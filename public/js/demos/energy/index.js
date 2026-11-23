@@ -7,7 +7,7 @@ import { motionModel } from '../../core/motion-graphs.js';
 import { format } from '../../core/i18n.js';
 import { prepareSketchOutlines } from '../../core/sketch.js';
 import { defaults, descent, escape, launcher } from './physics.js';
-import { wordsFor, workedSolution } from './content.js';
+import { content, wordsFor, workedSolution } from './content.js';
 import { createScene } from './scene.js';
 
 const configurations = {
@@ -87,6 +87,7 @@ export function mountEnergySystem(kind, { root, lang }) {
   }
   function select() {
     selected = true;
+    analysis.reveal();
     if (api.clock.playing) { paused = true; api.clock.pause(); }
     else render(api.clock.time);
   }
@@ -123,8 +124,12 @@ export function mountEnergySystem(kind, { root, lang }) {
     setText(api.feedback, message);
     api.setDescription(`${words.title}. ${message} ${words.speed} ${format(state.velocity / (space ? 1000 : 1))} ${space ? 'km/s' : 'm/s'}.`);
     scene.mass.setAttribute('aria-pressed', String(selected));
-    if (selected) analysis.update({ title: words.title, close: words.close, notice: paused ? words.paused : '',
-      axis: words.note, equations: solution });
+    if (selected) {
+      const start = content[kind].exampleStart ?? solution.length;
+      analysis.update({ title: words.title, close: words.close, notice: paused ? words.paused : '',
+        axis: words.note, equations: solution.slice(0, start),
+        solutionTitle: words.workedExample, solution: start < solution.length ? solution.slice(start) : undefined });
+    }
   }
   function setLanguage(next) {
     words = wordsFor(kind, next); solution = workedSolution(kind, next); api.setLanguage(next);

@@ -1,7 +1,8 @@
-import { renderLatex } from '../js/core/latex.js';
 import { createPresentationControls, preferredLanguage, saveLanguage } from '../js/core/presentation-controls.js';
 import { createQuiz } from '../js/core/quiz.js';
 import { createAchievements } from '../js/core/quiz-achievements.js';
+import { renderSubjectNavigation } from '../js/core/subject-navigation.js';
+import '../js/core/drawer-motion.js';
 import { createHydroAnalysis } from './analysis.js';
 import { hydroCourse } from './course.js';
 import { createHydroHome } from './home.js';
@@ -91,6 +92,7 @@ function mount() {
   document.querySelector('#mechanics-link').textContent = translate(labels.mechanicsCollection);
   document.documentElement.lang = language;
   document.documentElement.dir = language === 'he' ? 'rtl' : 'ltr';
+  renderSubjectNavigation({ subject: 'fluids', demoId: id, lang: language });
   document.querySelector('#brand-name').textContent = translate(labels.mechanics);
   document.title = [system && translate(system.title), translate(labels.title), 'Physics Playground'].filter(Boolean).join(' · ');
   languageButton.textContent = language === 'he' ? 'English' : 'עברית';
@@ -99,6 +101,7 @@ function mount() {
   demo.hidden = !system;
   main.classList.toggle('demo-page', Boolean(system));
   main.classList.toggle('hydro-landing', !system);
+  main.classList.toggle('home', !system);
   if (!system) {
     root.replaceChildren();
     const view = createHydroHome({ lang: language, translate, defaults, signal, achievements });
@@ -125,10 +128,9 @@ function mount() {
             <span class="metric-value"><span data-metric="${key}"></span><small>${unit}</small></span>
           </div>`).join('')}</div>
         <p class="hydro-status" id="hydro-status"></p>
-        <div class="equation hydro-formulas" dir="ltr"></div>
         <p class="hydro-notes">${translate(system.notes)}</p>
       </div>
-      <aside class="control-panel">
+      <div class="experiment-sidebar"><aside class="control-panel">
         <h3>${translate(labels.controls)}</h3>
         ${system.fields.map(({ key, label, min, max, step, unit }) => `
           <div class="parameter">
@@ -142,10 +144,9 @@ function mount() {
           ${playbackId ? `<button class="button primary" type="button" id="${playbackId}"></button>` : ''}
           <button class="button secondary" type="button" id="reset">${translate(labels.reset)}</button>
         </div>
-      </aside>
+      </aside></div>
     </div>`;
 
-  root.querySelector('.hydro-formulas').append(...system.formulas.map(formula => renderLatex(formula)));
   const canvas = root.querySelector('canvas');
   const context = canvas.getContext('2d');
   const status = root.querySelector('#hydro-status');
@@ -185,7 +186,7 @@ function mount() {
       metricNodes[i].textContent = format(reading[key] * scale);
     });
     const phase = reducedMotion.matches ? 0 : elapsed;
-    if (context) system.draw(canvas, state, reading, phase, analysis.selected);
+    if (context) system.draw(canvas, state, reading, phase, analysis.selected, format);
     analysis.update(state, reading, format);
     if ((drain && state.depth === 0) || blockMotion?.settled || (hydraulic && elapsed >= hydraulicDuration)) running = false;
     const message = drain ? (state.depth === 0 ? labels.empty : elapsed > 0 || running ? labels.draining : labels.ready)

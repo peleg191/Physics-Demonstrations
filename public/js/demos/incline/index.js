@@ -1,3 +1,4 @@
+import { markDiagramTerm } from '../../core/analysis-highlights.js';
 import { prepareSketchOutlines } from '../../core/sketch.js';
 import { geometryLayer, geometryLabel, angleGuide, dimensionGuide, showInitialGeometry } from '../../core/geometry.js';
 import { motionModel } from '../../core/motion-graphs.js';
@@ -52,7 +53,7 @@ export function mount({ root, lang }) {
   }
   function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); scene.block.focus({ preventScroll: true }); }
   function select() {
-    paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; render(api.clock.time);
+    paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; analysis.reveal(); render(api.clock.time);
   }
   function isBlock(node) { for (; node && node !== api.svg; node = node.parentNode) if (node === scene.block) return true; return false; }
   api.svg.addEventListener('click', event => { if (isBlock(event.target)) select(); else if (selected) close(); }, { signal: api.signal });
@@ -134,6 +135,9 @@ export function mount({ root, lang }) {
         const ux = length ? fx / length : 0, uy = length ? fy / length : 0, head = Math.min(10, length * forceScale / 2);
         path.setAttribute('d', `M ${cx} ${cy} l ${dx} ${dy} m ${-ux * head - uy * head / 2} ${-uy * head + ux * head / 2} l ${ux * head + uy * head / 2} ${uy * head - ux * head / 2} l ${-ux * head + uy * head / 2} ${-uy * head - ux * head / 2}`);
         label.setAttribute('x', cx + dx + (index === 2 ? -35 : index === 3 ? -28 : 28)); label.setAttribute('y', cy + dy + (index === 0 || index === 3 ? 22 : -10));
+        const term = name.split(' ')[0];
+        markDiagramTerm(path, term);
+        markDiagramTerm(label, term);
         label.textContent = `${name} = ${format(length, 1)} N`;
       });
     }

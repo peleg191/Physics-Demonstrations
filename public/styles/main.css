@@ -416,7 +416,9 @@ html:lang(he) .hero .hero-accent{font-family:inherit;font-style:normal;font-weig
 .achievements>summary{display:flex;align-items:center;gap:10px;padding:16px 20px;cursor:pointer;font-weight:600;font-size:14px;list-style:none}
 .achievements>summary::-webkit-details-marker{display:none}
 .achievements>summary::after{content:'';display:block;width:8px;height:8px;flex-shrink:0;margin-inline-start:4px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:translateY(-2px) rotate(45deg);transition:transform .18s}
-.achievements[open]>summary::after{transform:translateY(2px) rotate(225deg)}
+.achievements[open]:not([data-drawer-motion=closing])>summary::after{transform:translateY(2px) rotate(225deg)}
+details[data-drawer-motion]{overflow:clip}
+@media(prefers-reduced-motion:reduce){.achievements>summary::after{transition:none}}
 .achievements>summary>.achievement-icon{width:22px;height:22px;color:var(--green)}
 .journey-total{margin-inline-start:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .achievements-body{padding:0 20px 14px}

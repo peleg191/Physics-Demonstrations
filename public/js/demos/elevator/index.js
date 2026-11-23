@@ -1,3 +1,4 @@
+import { markDiagramTerm } from '../../core/analysis-highlights.js';
 import { physicsConfig } from '../../config.js';
 import { createExperiment } from '../../core/experiment.js';
 import { createBodyAnalysis } from '../../core/body-analysis.js';
@@ -36,7 +37,7 @@ export function mount({ root, lang }) {
   function reset() { paused = false; api.clock.reset(); }
   function defaults() { params = { ...defaultParameters }; for (const [key, control] of controls) control.update(params[key]); reset(); }
   function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); person.focus({ preventScroll: true }); }
-  function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; render(api.clock.time); }
+  function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; analysis.reveal(); render(api.clock.time); }
 
   // The cabin is a moving reference for the artwork only. Equations use the Earth frame.
   s('path', { d: 'M 165 20 V 425 M 475 20 V 425', stroke: 'var(--scene-structure, #839775)', 'stroke-width': 5 }, api.svg);
@@ -91,6 +92,9 @@ export function mount({ root, lang }) {
       arrows[index].path.setAttribute('d', force === 0 ? '' : `M 320 265 V ${y} m -6 ${-direction * head} l 6 ${direction * head} l 6 ${-direction * head}`);
       arrows[index].label.setAttribute('x', index === 0 ? 393 : 246);
       arrows[index].label.setAttribute('y', y + (index === 0 ? -8 : 18));
+      const term = index === 0 ? 'N' : 'mg';
+      markDiagramTerm(arrows[index].path, term);
+      markDiagramTerm(arrows[index].label, term);
       setText(arrows[index].label, `${index === 0 ? 'N' : 'mg'} = ${format(force, 1)} N`);
     });
     if (api.clock.playing) paused = false;

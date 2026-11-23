@@ -36,6 +36,7 @@ const covers = {
 };
 
 export function createHydroHome({ lang, translate, defaults, signal, achievements }) {
+  const format = new Intl.NumberFormat(lang, { maximumFractionDigits: 3 }).format;
   const canvas = document.createElement('canvas');
   canvas.width = 1120;
   canvas.height = 690;
@@ -51,11 +52,11 @@ export function createHydroHome({ lang, translate, defaults, signal, achievement
       const system = systems[key];
       const state = defaults(system);
       if (key === 'buoyancy') state.immersion = state.position = state.blockDensity / state.liquidDensity;
-      system.draw(canvas, state, system.calculate(state), 0, covers[key].subject);
+      const selection = new Set(covers[key].subject ? [covers[key].subject] : []);
+      system.draw(canvas, state, system.calculate(state), 0, selection, format);
       image.src = canvas.toDataURL();
     }
-    drawHydroHero(canvas);
-    heroImage.src = canvas.toDataURL();
+    drawHydroHero(heroCanvas);
   }
 
   const hero = element('section', 'hero');
@@ -64,14 +65,14 @@ export function createHydroHome({ lang, translate, defaults, signal, achievement
   heading.append(element('span', 'hero-accent', translate(['Fluids at rest and in motion', 'נוזלים במנוחה ובתנועה'])));
   heroCopy.append(heading, element('p', 'hero-intro', translate([
     'Explore how liquids transmit pressure, support floating objects, and flow through pipes or out of a tank.',
-    'בדקו כיצד נוזלים מעבירים לחץ, מציפים גופים וזורמים בצינורות ומתוך מכל.',
+    'בדקו כיצד לחץ מועבר בנוזל, כיצד כוח הציפה פועל על גופים, וכיצד נוזלים זורמים בצינורות ויוצאים ממכל.',
   ])));
   const heroArt = element('div', 'hero-art hydro-hero-art');
-  const heroImage = element('img');
-  heroImage.alt = '';
-  heroImage.width = canvas.width;
-  heroImage.height = canvas.height;
-  heroArt.append(heroImage);
+  heroArt.setAttribute('aria-hidden', 'true');
+  const heroCanvas = element('canvas');
+  heroCanvas.width = 1440;
+  heroCanvas.height = 320;
+  heroArt.append(heroCanvas);
   hero.append(heroCopy, heroArt);
 
   const collection = element('section', 'collection');

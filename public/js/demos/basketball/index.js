@@ -1,3 +1,4 @@
+import { markDiagramTerm } from '../../core/analysis-highlights.js';
 import { prepareSketchOutlines } from '../../core/sketch.js';
 import { geometryLayer, geometryLabel, angleGuide, dimensionGuide, showInitialGeometry } from '../../core/geometry.js';
 import { renderMath, identifier, subscript } from '../../core/math.js';
@@ -29,7 +30,7 @@ export function mount({ root, lang }) {
   function selectBall() {
     pausedForAnalysis = api.clock.playing;
     if (api.clock.playing) api.clock.pause();
-    selected = true; render(api.clock.time);
+    selected = true; analysis.reveal(); render(api.clock.time);
   }
   function isBall(target) {
     for (let node = target; node && node !== api.svg; node = node.parentNode) if (node === scene.ball) return true;
@@ -168,6 +169,8 @@ export function mount({ root, lang }) {
     }
     const horizontalLabel = velocityLabel('x', 'horizontal-velocity');
     const verticalLabel = velocityLabel('y', 'vertical-velocity');
+    for (const node of [horizontalArrow, horizontalLabel]) markDiagramTerm(node, 'vx');
+    for (const node of [verticalArrow, verticalLabel]) markDiagramTerm(node, 'vy');
     // One common scale preserves the ratio of the two velocity components.
     const velocityScale = 65 / Math.max(params.speed, Math.hypot(vy, Math.sqrt(vy * vy + 2 * gravity * params.releaseHeight)));
     const geometry = geometryLayer(svg);

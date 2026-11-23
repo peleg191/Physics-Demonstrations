@@ -1,3 +1,4 @@
+import { markDiagramTerm } from './analysis-highlights.js';
 import { prepareSketchOutlines } from './sketch.js';
 import { geometryLayer, geometryLabel, angleGuide, dimensionGuide, showInitialGeometry } from './geometry.js';
 import { motionModel } from './motion-graphs.js';
@@ -37,7 +38,7 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
   function reset() { paused = false; api.clock.reset(); }
   function defaults() { params = { ...defaultParameters }; for (const [key, control] of controls) control.update(params[key]); reset(); }
   function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); scene.body.focus({ preventScroll: true }); }
-  function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; render(api.clock.time); }
+  function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; analysis.reveal(); render(api.clock.time); }
   function isBody(node) { for (; node && node !== api.svg; node = node.parentNode) if (node === scene.body) return true; return false; }
   api.svg.addEventListener('click', event => { if (suppressClick) { suppressClick = false; return; } if (isBody(event.target)) select(); else if (selected) close(); }, { signal: api.signal });
   api.svg.addEventListener('keydown', event => {
@@ -116,6 +117,9 @@ export function mountOscillator({ root, lang, kind, strings, defaultParameters, 
     const forces = s('g', { 'pointer-events': 'none', 'aria-hidden': 'true' }, svg);
     const force = s('path', { fill: 'none', stroke: 'var(--scene-force-weight, #9a451b)', 'stroke-width': 4 }, forces);
     const label = svgText(forces, 0, 0, '', { 'text-anchor': 'middle', class: 'force-label' });
+    const terms = pendulum ? ['mgθ'] : dual ? ['2kx'] : shifted ? ['Fnet'] : ['F', 'kx'];
+    markDiagramTerm(force, ...terms);
+    markDiagramTerm(label, ...terms);
     const geometry = geometryLayer(svg);
     prepareSketchOutlines(api.svg);
     scene = { shifted, body, bodyLabel, reference, connector, secondConnector, forces, force, label, geometry };

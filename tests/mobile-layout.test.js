@@ -86,6 +86,7 @@ test('phone and tablet parameters precede metrics and return to the desktop side
         const parameters = fixture.find(hasClass('parameters'));
         const quiz = fixture.find(hasClass('system-quiz'));
         const layout = fixture.find(hasClass('experiment-layout'));
+        const sidebar = fixture.find(hasClass('experiment-sidebar'));
         assert.equal(panel.parentNode, column);
         const coach = fixture.find(hasClass('experiment-coach'));
         assert.equal(coach.parentNode, fixture.find(hasClass('quiz-window')));
@@ -99,7 +100,8 @@ test('phone and tablet parameters precede metrics and return to the desktop side
         input.dispatchEvent(new Event('change'));
         assert.equal(panel.parentNode, column);
         stacked.matches = false; stacked.dispatchEvent(new Event('change'));
-        assert.equal(panel.parentNode, layout);
+        assert.equal(panel.parentNode, sidebar);
+        assert.equal(sidebar.parentNode, layout);
         assert.equal(quiz.parentNode, fixture.root);
         stacked.matches = true; stacked.dispatchEvent(new Event('change'));
         assert.equal(panel.parentNode, column);

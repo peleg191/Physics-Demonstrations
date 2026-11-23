@@ -1,3 +1,4 @@
+import { markDiagramTerm } from '../../core/analysis-highlights.js';
 import { createExperiment } from '../../core/experiment.js';
 import { createBodyAnalysis } from '../../core/body-analysis.js';
 import { createEnergyTransfer, energyTransferBounds } from '../../core/energy-transfer.js';
@@ -140,12 +141,15 @@ export function mountCircularSystem(kind, { root, lang }) {
     const length = Math.hypot(dx, dy), ux = length ? dx / length : 0, uy = length ? dy / length : 0, head = Math.min(9, length / 2);
     arrows[index].path.setAttribute('display', 'inline'); arrows[index].label.setAttribute('display', 'inline');
     arrows[index].path.setAttribute('d', length < 0.01 ? '' : `M ${x} ${y} l ${dx} ${dy} m ${-head * ux + head / 2 * uy} ${-head * uy - head / 2 * ux} l ${head * ux - head / 2 * uy} ${head * uy + head / 2 * ux} l ${-head * ux - head / 2 * uy} ${-head * uy + head / 2 * ux}`);
+    const term = text.replace(/^−/, '').split(' ')[0];
+    markDiagramTerm(arrows[index].path, term);
+    markDiagramTerm(arrows[index].label, term);
     arrows[index].label.setAttribute('x', labelX); arrows[index].label.setAttribute('y', labelY); setText(arrows[index].label, text);
   }
   function reset() { paused = false; api.clock.reset(); }
   function restore() { if (bowl) { resolved = false; resolveCheckbox.checked = false; resolveNote.hidden = true; } params = { ...modelDefaults[kind] }; for (const [key, control] of controls) control.update(params[key]); reset(); }
   function close() { selected = false; paused = false; analysis.hide(); render(api.clock.time); body.focus({ preventScroll: true }); }
-  function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; render(api.clock.time); }
+  function select() { paused = api.clock.playing; if (paused) api.clock.pause(); selected = true; analysis.reveal(); render(api.clock.time); }
   root.addEventListener('keydown', event => { if (event.key === 'Escape' && selected && !event.defaultPrevented) { event.preventDefault(); close(); } }, { signal: api.signal });
   function render(time, { updateReadouts = true } = {}) {
     if (!ready) return;

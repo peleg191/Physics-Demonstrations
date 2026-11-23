@@ -3,9 +3,6 @@ import { drawBuoyancy, drawHydraulic, drawPipe, drawTank } from './diagrams.js';
 
 const field = (key, label, value, min, max, step, unit = '') => ({ key, label, value, min, max, step, unit });
 
-const continuity = String.raw`v_2 = \left(\frac{R_1}{R_2}\right)^2 v_1`;
-const pressureEquation = String.raw`p_2 = p_1 + \frac{1}{2}\rho(v_1^2-v_2^2)`;
-
 function pipeSystem(descending) {
   return {
     title: descending ? ['Widening downhill pipe', 'צינור מתרחב ויורד'] : ['Horizontal narrowing pipe', 'צינור אופקי שהולך ונעשה צר'],
@@ -33,7 +30,6 @@ function pipeSystem(descending) {
         ['elevationChange', ['Pressure gain from descent', 'תוספת הלחץ עקב הירידה בגובה'], 'kPa', 0.001],
       ] : []),
     ],
-    formulas: [continuity, pressureEquation + (descending ? String.raw` + \rho g\Delta z` : '')],
     playback: 'flow',
     calculate: pipeFlow,
     draw: drawPipe,
@@ -69,11 +65,6 @@ export const systems = {
       ['outputForce', ['Upward force', 'כוח הנוזל כלפי מעלה'], 'N'],
       ['net', ['Net force (up positive)', 'כוח שקול (מעלה חיובי)'], 'N'],
     ],
-    formulas: [
-      String.raw`\Delta p = \frac{F_1}{A_1} = \frac{F_2}{A_2}`,
-      String.raw`F_{\mathrm{net}} = F_2 - Mg`,
-      String.raw`A_1 |\Delta x_1| = A_2 |\Delta x_2|`,
-    ],
     calculate: hydraulic,
     draw: drawHydraulic,
     status({ net }) {
@@ -107,10 +98,6 @@ export const systems = {
       ['upward', ['Buoyant force', 'כוח הציפה'], 'N'],
       ['weight', ['Block weight', 'משקל הגוף'], 'N'],
       ['net', ['Net force (up positive)', 'כוח שקול (מעלה חיובי)'], 'N'],
-    ],
-    formulas: [
-      String.raw`\frac{V_{\mathrm{sub}}}{V_{\mathrm{obj}}} = \frac{\rho_{\mathrm{obj}}}{\rho_{\mathrm{liq}}}\quad(F_B = mg)`,
-      String.raw`F_B = \rho_{\mathrm{liq}} V_{\mathrm{sub}} g`,
     ],
     calculate: buoyancy,
     draw: drawBuoyancy,
@@ -151,10 +138,6 @@ export const systems = {
       ['speed', ['Outlet speed', 'גודל מהירות היציאה'], 'm/s'],
       ['surfaceSpeed', ['Surface descent speed', 'גודל מהירות הירידה של פני המים'], 'm/s'],
       ['approximation', ['Torricelli approximation', 'קירוב טוריצ׳לי'], 'm/s'],
-    ],
-    formulas: [
-      'v_2^2 - v_1^2 = 2gh', 'A_1v_1 = A_2v_2',
-      String.raw`v_2 \approx \sqrt{2gh}\quad(A_2/A_1 \to 0)`,
     ],
     calculate: tank,
     draw: drawTank,

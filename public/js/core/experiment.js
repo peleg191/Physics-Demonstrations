@@ -1,6 +1,7 @@
 import { element, button, svgElement, setText } from './dom.js';
 import { metric } from './controls.js';
 import { translator } from './i18n.js';
+import { stackedExperimentQuery } from './analysis-tabs.js';
 import { createClock } from './clock.js';
 import { createMotionGraphs } from './motion-graphs.js';
 import { createQuiz } from './quiz.js';
@@ -95,14 +96,16 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
   const resetNote = element('p', 'reset-note', t('defaultNote'));
   const assumptions = element('details', 'model-notes'); const summary = element('summary', '', t('assumptions')); const modelText = element('p');
   assumptions.append(summary, modelText); panel.append(panelTitle, panelNote, parameters, defaultButton, resetNote, assumptions);
-  layout.append(stageColumn, panel); root.append(layout);
+  const sidebar = element('div', 'experiment-sidebar');
+  sidebar.append(panel);
+  layout.append(stageColumn, sidebar); root.append(layout);
   if (quiz) root.append(quiz.root);
-  const stackedLayout = matchMedia('(max-width: 900px), (max-width: 1000px) and (max-height: 600px) and (orientation: landscape)');
+  const stackedLayout = matchMedia(stackedExperimentQuery);
   function placeParameters() {
     if (stackedLayout.matches) {
       stageColumn.insertBefore(panel, rateWrap);
     } else {
-      layout.append(panel);
+      sidebar.append(panel);
     }
   }
   stackedLayout.addEventListener?.('change', placeParameters, { signal });
@@ -177,6 +180,7 @@ export function createExperiment({ root, lang, system, duration, render, reset, 
     setDescription(text) { setText(accessible, text); if (svg.getAttribute('aria-label') !== text) svg.setAttribute('aria-label', text); },
     setLanguage(next) {
       currentLang = next; t = translator(next);
+      layout.dispatchEvent(new Event('experimentlanguagechange'));
       quiz?.setLanguage(next);
       graphs?.setLanguage(next);
       panelTitle.textContent = t('parameters'); panelNote.textContent = t('parametersNote');

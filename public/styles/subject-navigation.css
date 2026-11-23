@@ -1,0 +1,300 @@
+.subject-sidebar {
+  --subject-heading-fill: #e6edf4;
+  --subject-heading-hover: #d9e5f0;
+  --subject-heading-edge: #56758f;
+  --subject-heading-ink: #2f4e68;
+  min-inline-size: 0;
+  margin: 10px 12px 0;
+}
+[data-theme=dark] .subject-sidebar {
+  --subject-heading-fill: #293a49;
+  --subject-heading-hover: #33485a;
+  --subject-heading-edge: #8fafc9;
+  --subject-heading-ink: #d7e6f3;
+}
+.subject-toggle.button {
+  min-height: 44px;
+  gap: 8px;
+}
+.subject-toggle.button[aria-expanded=true] {
+  background-color: var(--accent-soft);
+  color: var(--green);
+}
+.subject-panel {
+  display: grid;
+  grid-template-rows: minmax(0, 0fr);
+  opacity: 0;
+  transition: grid-template-rows 220ms cubic-bezier(.2, .75, .25, 1), opacity 180ms ease;
+}
+button[aria-expanded=true] + .subject-panel {
+  grid-template-rows: minmax(0, 1fr);
+  opacity: 1;
+}
+.subject-panel-content {
+  min-inline-size: 0;
+  overflow: clip;
+}
+.subject-menu {
+  margin-block-start: 6px;
+  padding: 4px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.subject-group-toggle,
+.subject-menu a {
+  padding: 6px;
+  line-height: 1.35;
+  border-radius: 5px;
+  overflow-wrap: anywhere;
+}
+.subject-toggle,
+.subject-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.subject-group-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: start;
+}
+.subject-toggle::after,
+.subject-group-toggle::before {
+  content: "";
+  flex: 0 0 6px;
+  block-size: 6px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(-45deg);
+  transition: transform 220ms cubic-bezier(.2, .75, .25, 1);
+}
+[dir=rtl] .subject-toggle::after,
+[dir=rtl] .subject-group-toggle::before {
+  transform: rotate(135deg);
+}
+.subject-sidebar .subject-toggle[aria-expanded=true]::after,
+.subject-sidebar .subject-group-toggle[aria-expanded=true]::before {
+  transform: rotate(45deg);
+}
+.subject-menu a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+}
+.subject-group > .subject-panel {
+  margin-inline-start: 8px;
+}
+.subject-menu :is(button, a):focus-visible {
+  outline-offset: -2px;
+}
+.subject-menu :is(button, a):hover,
+.subject-menu a[aria-current=page] {
+  background: var(--accent-soft);
+}
+.subject-menu a[aria-current=page] {
+  font-weight: 700;
+  border-inline-start: 3px solid var(--green);
+}
+.subject-menu > .subject-group + .subject-group {
+  margin-block-start: 4px;
+}
+.subject-menu > .subject-group > .subject-group-toggle {
+  background-color: var(--subject-heading-fill);
+  border-inline-start: 3px solid var(--subject-heading-edge);
+  color: var(--subject-heading-ink);
+  font-weight: 700;
+}
+.subject-menu > .subject-group > .subject-group-toggle:hover {
+  background-color: var(--subject-heading-hover);
+}
+.subject-menu > .subject-group > .subject-group-toggle[aria-current=true] {
+  background-color: var(--subject-heading-hover);
+  border-inline-start-color: currentColor;
+  box-shadow: inset 0 0 0 1px var(--subject-heading-edge);
+}
+.subject-sidebar svg {
+  inline-size: 18px;
+  block-size: 18px;
+  flex: 0 0 18px;
+}
+.subject-minimize,
+.subject-rail {
+  display: none;
+}
+.subject-rail button {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  place-items: center;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.subject-minimize {
+  min-inline-size: 40px;
+  min-block-size: 32px;
+  padding: 0;
+  place-items: center;
+  color: var(--subject-heading-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+.subject-minimize:hover,
+.subject-rail button:hover {
+  background: var(--subject-heading-fill);
+}
+.subject-minimize:focus-visible,
+.subject-rail button:focus-visible {
+  outline-offset: -4px;
+}
+.subject-rail button[aria-current=true] {
+  color: var(--subject-heading-ink);
+  background: var(--subject-heading-hover);
+  border-color: var(--subject-heading-edge);
+}
+.subject-minimize {
+  --chevron-direction: 1;
+}
+[dir=rtl] .subject-minimize {
+  --chevron-direction: -1;
+}
+.subject-minimize svg {
+  transform: scaleX(var(--chevron-direction));
+}
+.subject-minimize[aria-expanded=false] svg {
+  transform: scaleX(calc(-1 * var(--chevron-direction)));
+}
+
+[data-illustration-style=notebook] :is(.subject-menu, .subject-toggle, .subject-rail button) {
+  border-radius: 4px 9px 5px 8px;
+  box-shadow: var(--panel-shadow);
+}
+[data-illustration-style=notebook] .subject-toggle.button {
+  border-style: dashed;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 7px, var(--rule) 7px 8px);
+}
+[data-illustration-style=notebook] .subject-toggle.button:is(:hover, [aria-expanded=true]) {
+  background-color: var(--accent-soft);
+}
+[data-illustration-style=notebook] .subject-minimize {
+  border: 1px dashed var(--subject-heading-edge);
+  border-radius: 3px 7px 4px 6px;
+  background-color: var(--white);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 5px, var(--rule) 5px 6px);
+  box-shadow: var(--panel-shadow);
+}
+[data-illustration-style=notebook] .subject-minimize:hover {
+  background-color: var(--subject-heading-fill);
+}
+[data-illustration-style=notebook] .subject-menu {
+  position: relative;
+  padding-inline-start: 9px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 27px, var(--rule) 27px 28px);
+}
+[data-illustration-style=notebook] .subject-menu::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 4px;
+  border-inline-start: 1px solid var(--subject-heading-edge);
+  opacity: .55;
+  pointer-events: none;
+}
+[data-illustration-style=notebook] .subject-menu :is(.subject-group-toggle, a) {
+  border-radius: 3px 7px 4px 5px;
+}
+[data-illustration-style=notebook] .subject-menu > .subject-group > .subject-group-toggle {
+  border-inline-start-style: double;
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--rule) 6px 7px);
+}
+[data-illustration-style=notebook] .subject-menu a[aria-current=page] {
+  text-decoration: underline var(--green) 1px;
+  text-underline-offset: 3px;
+}
+
+@media (width < 1100px) {
+  .subject-sidebar[data-subject-demo] {
+    display: none;
+  }
+}
+
+@media (min-width: 1100px) {
+  .subject-layout {
+    display: grid;
+    grid-template-columns: clamp(176px, 13vw, 208px) minmax(0, 1fr);
+    transition: grid-template-columns 220ms cubic-bezier(.2, .75, .25, 1),
+                column-gap 220ms cubic-bezier(.2, .75, .25, 1);
+    align-items: start;
+    gap: 12px;
+    width: calc(100% - 24px);
+    margin-inline: auto;
+  }
+  .subject-layout > main {
+    width: 100%;
+    max-width: none;
+  }
+  .subject-sidebar {
+    position: sticky;
+    inset-block-start: 14px;
+    margin-inline: 0;
+    max-height: calc(100dvh - 28px);
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+  .subject-toggle.button {
+    display: none;
+  }
+  .subject-minimize {
+    display: grid;
+    margin-block-end: 4px;
+    margin-inline-start: auto;
+  }
+  .subject-layout[data-sidebar-minimized] {
+    --subject-rail-width: 40px;
+    grid-template-columns: var(--subject-rail-width) minmax(0, 1fr);
+    column-gap: 8px;
+  }
+  .subject-layout[data-sidebar-minimized] .subject-sidebar {
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+  }
+  .subject-layout[data-sidebar-minimized] .subject-menu-panel {
+    display: none;
+  }
+  .subject-layout[data-sidebar-minimized] .subject-rail {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+  }
+  .subject-layout[data-sidebar-minimized] :is(.subject-minimize, .subject-rail button) {
+    min-inline-size: var(--subject-rail-width);
+  }
+  .subject-rail button {
+    display: grid;
+  }
+  .subject-sidebar .subject-menu-panel {
+    grid-template-rows: minmax(0, 1fr);
+    opacity: 1;
+    transition: none;
+  }
+  .subject-menu {
+    margin-block-start: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subject-layout,
+  .subject-panel,
+  .subject-toggle::after,
+  .subject-group-toggle::before {
+    transition: none;
+  }
+}

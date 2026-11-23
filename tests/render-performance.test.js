@@ -60,15 +60,17 @@ test('analysis notice and numeric changes preserve static equations and derivati
     const data = { title: 'Forces', close: 'Close', notice: '', axis: 'Up', cutoff: '',
       equations: [{ math: true, text: 'F = ma' }], numeric: [{ math: true, text: 'F = 2' }], solution: [{ math: true, text: 'a = F / m' }] };
     panel.update(data);
-    const equation = panel.root.children[3].children[0];
+    const equations = fixture.find(hasClass('analysis-governing-equations'));
+    const equation = equations.children[0];
     const [numeric, solution] = panel.root.children.filter(node => node.tagName === 'details');
     solution.open = true;
     const derivation = solution.children[1].children[0];
-    const oldNumeric = numeric.children[1].children[0];
+    const numericValues = numeric.children.at(-1);
+    const oldNumeric = numericValues.children[0];
     panel.update({ ...data, notice: 'Paused', numeric: [{ math: true, text: 'F = 3' }] });
-    assert.equal(panel.root.children[3].children[0], equation);
+    assert.equal(equations.children[0], equation);
     assert.equal(solution.children[1].children[0], derivation);
-    assert.notEqual(numeric.children[1].children[0], oldNumeric);
+    assert.notEqual(numericValues.children[0], oldNumeric);
     assert.equal(solution.open, true);
   } finally { fixture.cleanup(); }
 });

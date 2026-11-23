@@ -13,7 +13,7 @@ export function oscillatorAnalysis(kind, words, paused, ended) {
   const result = {
     title: words.title, close: words.close, notice: paused ? words.paused : '', axis: words.axis, cutoff: ended ? words.end : '',
     equations: [pendulum
-      ? math('mL d²θ/dt² = −mg sin θ ≈ −mgθ', row(i('m'), i('L'), acceleration, e('= −mg'), trig('sin', i('θ')), e('≈ −mg'), i('θ')))
+      ? math('mL d²θ/dt² = −mg sin θ ≈ −mgθ', row(i('m'), i('L'), acceleration, e('= −mg'), trig('sin', i('θ')), e('≈ −mgθ')))
       : math(dual ? 'N − mg = 0; F₁ + F₂ = −2kx = m d²x/dt²' : 'N − mg = 0; F = −kx = m d²x/dt²', row(e('N − mg = 0'), e(dual ? '; F₁ + F₂ = −2kx = m' : '; F = −kx = m'), acceleration))],
     solutionTitle: words.derive,
     solution: [prose(words.approximation),
@@ -32,7 +32,8 @@ export function oscillatorAnalysis(kind, words, paused, ended) {
     const shift = e('ΔL');
     result.equations = [
       ...(inclined ? [math('N = mg cos θ', row(e('N = mg'), trig('cos', i('θ'))))] : []),
-      math(`m d²x/dt² = ${weightText} − kq`, row(i('m'), acceleration, e('='), weight, e('− kq'))),
+      math(`m d²x/dt² = F_net = ${weightText} − kq`,
+        row(i('m'), acceleration, e('='), subscript(i('F'), ['mtext', 'net']), e('='), weight, e('− kq'))),
     ];
     result.solution.splice(1, 0,
       math(`kΔL = ${weightText}`, row(i('k'), shift, e('='), weight)),
